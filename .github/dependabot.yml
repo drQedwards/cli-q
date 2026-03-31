@@ -1,0 +1,28 @@
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies]
+    groups:
+      all-go-deps:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies]
+    groups:
+      all-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: /npm
+    schedule:
+      interval: weekly
+      day: monday
+    labels: [dependencies]

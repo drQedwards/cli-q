@@ -1,0 +1,62 @@
+version: "2"
+
+linters:
+  enable:
+    # correctness
+    - govet
+    - errcheck
+    - staticcheck
+    - ineffassign
+    - unconvert
+    - bodyclose
+    - exportloopref
+    # style / clarity
+    - revive
+    - gocritic
+    - misspell
+    - whitespace
+    # security
+    - gosec
+    # complexity
+    - gocyclo
+    # imports
+    - goimports
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+  revive:
+    rules:
+      - name: exported
+        arguments:
+          - disableStutteringCheck
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - commentedOutCode
+
+  gosec:
+    excludes:
+      - G304 # file path from variable — expected in a CLI
+
+  goimports:
+    local-prefixes: github.com/supermodeltools/cli
+
+issues:
+  exclude-rules:
+    # Test files get more latitude
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - gocritic
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m

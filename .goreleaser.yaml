@@ -24,9 +24,9 @@ builds:
         goarch: arm64
     ldflags:
       - -s -w
-      - -X main.version={{.Version}}
-      - -X main.commit={{.ShortCommit}}
-      - -X main.date={{.Date}}
+      - -X github.com/supermodeltools/cli/internal/build.Version={{.Version}}
+      - -X github.com/supermodeltools/cli/internal/build.Commit={{.ShortCommit}}
+      - -X github.com/supermodeltools/cli/internal/build.Date={{.Date}}
 
 archives:
   - id: default
