@@ -16,9 +16,8 @@ Supermodel CLI connects [Claude Code](https://claude.ai/code), [Codex](https://o
 |---|---|
 | **Website** | [supermodeltools.com](http://supermodeltools.com) |
 | **API Docs** | [api.supermodeltools.com](https://api.supermodeltools.com) |
-| **Dashboard** | <!-- placeholder: dashboard URL --> |
-| **Twitter / X** | <!-- placeholder: @supermodeltools --> |
-| **Discord** | <!-- placeholder: invite link --> |
+| **Dashboard** | [dashboard.supermodeltools.com](https://dashboard.supermodeltools.com) |
+| **Twitter / X** | [@supermodeltools](https://x.com/supermodeltools) |
 | **Contact** | [abe@supermodel.software](mailto:abe@supermodel.software) |
 
 ---
