@@ -14,8 +14,10 @@ import (
 type Format string
 
 const (
+	// FormatHuman renders output as human-readable text.
 	FormatHuman Format = "human"
-	FormatJSON  Format = "json"
+	// FormatJSON renders output as JSON.
+	FormatJSON Format = "json"
 )
 
 // ParseFormat converts a string to a Format, defaulting to FormatHuman.
@@ -60,7 +62,7 @@ func Table(w io.Writer, headers []string, rows [][]string) {
 	for _, row := range rows {
 		fmt.Fprintln(tw, strings.Join(row, "\t"))
 	}
-	tw.Flush()
+	_ = tw.Flush()
 }
 
 // Spinner provides simple braille-spinner progress indication on stderr.

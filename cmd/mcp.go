@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+
 	"github.com/supermodeltools/cli/internal/build"
 	"github.com/supermodeltools/cli/internal/config"
 	"github.com/supermodeltools/cli/internal/mcp"

@@ -93,7 +93,7 @@ func isEntryPoint(name, file string, includeExports bool) bool {
 		}
 	}
 	// Exported functions are reachable by callers outside the repo
-	if !includeExports && len(bare) > 0 && unicode.IsUpper(rune(bare[0])) {
+	if !includeExports && bare != "" && unicode.IsUpper(rune(bare[0])) {
 		return true
 	}
 	// Files ending in _test.go — everything in there is an entry point

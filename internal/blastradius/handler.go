@@ -56,7 +56,7 @@ func findBlastRadius(g *api.Graph, repoDir, target string, maxDepth int) ([]Resu
 		}
 	}
 	if len(seeds) == 0 {
-		return nil, fmt.Errorf("file not found in graph: %s\n  Run `supermodel analyze` to refresh the analysis.", target)
+		return nil, fmt.Errorf("file not found in graph: %s (run `supermodel analyze` to refresh)", target)
 	}
 
 	// Build reverse adjacency: nodeID → set of node IDs that import it.

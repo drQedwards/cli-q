@@ -8,10 +8,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	DefaultAPIBase = "https://api.supermodeltools.com"
-	defaultOutput  = "human"
-)
+// DefaultAPIBase is the production Supermodel API endpoint.
+const DefaultAPIBase = "https://api.supermodeltools.com"
+
+const defaultOutput = "human"
 
 // Config holds user-level settings persisted at ~/.supermodel/config.yaml.
 type Config struct {

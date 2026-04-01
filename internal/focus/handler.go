@@ -16,10 +16,10 @@ import (
 
 // Options configures the focus command.
 type Options struct {
-	Force      bool   // bypass cache
-	Output     string // "markdown" | "json"
-	Depth      int    // import traversal depth (default 1)
-	IncludeTypes bool // include type/class nodes
+	Force        bool   // bypass cache
+	Output       string // "markdown" | "json"
+	Depth        int    // import traversal depth (default 1)
+	IncludeTypes bool   // include type/class nodes
 }
 
 // Slice is the token-efficient graph slice for a single file.
@@ -34,8 +34,8 @@ type Slice struct {
 
 // Function is a function defined in the focused file.
 type Function struct {
-	Name     string   `json:"name"`
-	Callees  []string `json:"calls,omitempty"` // functions this fn calls
+	Name    string   `json:"name"`
+	Callees []string `json:"calls,omitempty"` // functions this fn calls
 }
 
 // Call is a reference to this file from an external caller.
@@ -46,9 +46,9 @@ type Call struct {
 
 // Type is a type/class declared in or used by the focused file.
 type Type struct {
-	Name  string `json:"name"`
-	Kind  string `json:"kind"` // "class" | "interface" | "type"
-	File  string `json:"file"`
+	Name string `json:"name"`
+	Kind string `json:"kind"` // "class" | "interface" | "type"
+	File string `json:"file"`
 }
 
 // Run extracts a focused graph slice for target and prints it.
@@ -63,9 +63,9 @@ func Run(ctx context.Context, cfg *config.Config, dir, target string, opts Optio
 	}
 	sl := extract(g, target, depth, opts.IncludeTypes)
 	if sl == nil {
-		return fmt.Errorf("file not found in graph: %s\n  Run `supermodel analyze` first.", target)
+		return fmt.Errorf("file not found in graph: %s (run `supermodel analyze` first)", target)
 	}
-	return print(os.Stdout, sl, opts.Output)
+	return render(os.Stdout, sl, opts.Output)
 }
 
 // extract builds the Slice for the target file.
@@ -252,9 +252,9 @@ func extractTypes(g *api.Graph, fileID string, nodeByID map[string]*api.Node, re
 			}
 		}
 		types = append(types, Type{
-			Name:  n.Prop("name"),
-			Kind:  kind,
-			File:  n.Prop("file", "path"),
+			Name: n.Prop("name"),
+			Kind: kind,
+			File: n.Prop("file", "path"),
 		})
 	}
 	return types
@@ -283,7 +283,7 @@ func pathMatches(nodePath, target string) bool {
 
 // --- Output ------------------------------------------------------------------
 
-func print(w io.Writer, sl *Slice, format string) error {
+func render(w io.Writer, sl *Slice, format string) error {
 	if format == "json" {
 		return ui.JSON(w, sl)
 	}

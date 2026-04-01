@@ -80,10 +80,9 @@ func main() {
 	if err != nil {
 		fatalf("git archive failed: %v", err)
 	}
-	defer os.Remove(zipPath)
-
 	fmt.Println("→ Uploading repository to Supermodel API...")
 	graph, err := callAPI(apiBase, apiKey, zipPath)
+	os.Remove(zipPath)
 	if err != nil {
 		fatalf("API call failed: %v", err)
 	}

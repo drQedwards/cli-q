@@ -32,9 +32,9 @@ type request struct {
 }
 
 type response struct {
-	JSONRPC string `json:"jsonrpc"`
-	ID      any    `json:"id,omitempty"`
-	Result  any    `json:"result,omitempty"`
+	JSONRPC string    `json:"jsonrpc"`
+	ID      any       `json:"id,omitempty"`
+	Result  any       `json:"result,omitempty"`
 	Error   *rpcError `json:"error,omitempty"`
 }
 
@@ -58,9 +58,9 @@ type tool struct {
 }
 
 type toolSchema struct {
-	Type       string              `json:"type"`
+	Type       string                `json:"type"`
 	Properties map[string]schemaProp `json:"properties,omitempty"`
-	Required   []string            `json:"required,omitempty"`
+	Required   []string              `json:"required,omitempty"`
 }
 
 type schemaProp struct {
@@ -109,9 +109,9 @@ var tools = []tool{
 		InputSchema: toolSchema{
 			Type: "object",
 			Properties: map[string]schemaProp{
-				"label": {Type: "string", Description: "Filter nodes by label: File, Function, Class, etc."},
+				"label":    {Type: "string", Description: "Filter nodes by label: File, Function, Class, etc."},
 				"rel_type": {Type: "string", Description: "Filter relationships by type: IMPORTS, CALLS, DEFINES_FUNCTION, etc."},
-				"force": {Type: "boolean", Description: "Re-analyze even if a cached result exists."},
+				"force":    {Type: "boolean", Description: "Re-analyze even if a cached result exists."},
 			},
 		},
 	},
@@ -358,7 +358,10 @@ func findDeadFunctions(g *api.Graph, includeExports bool) []deadFn {
 	return out
 }
 
-type affected struct{ file string; depth int }
+type affected struct {
+	file  string
+	depth int
+}
 
 func findAffected(g *api.Graph, target string) []affected {
 	importedBy := make(map[string][]string)
@@ -443,7 +446,7 @@ func isEntryPoint(name, file string, includeExports bool) bool {
 			return true
 		}
 	}
-	if !includeExports && len(bare) > 0 && bare[0] >= 'A' && bare[0] <= 'Z' {
+	if !includeExports && bare != "" && bare[0] >= 'A' && bare[0] <= 'Z' {
 		return true
 	}
 	return strings.HasSuffix(file, "_test.go")

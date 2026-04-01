@@ -19,12 +19,12 @@ type Options struct {
 
 // Report holds all status information.
 type Report struct {
-	Version     string `json:"version"`
-	Authed      bool   `json:"authenticated"`
-	APIBase     string `json:"api_base"`
-	ConfigPath  string `json:"config_path"`
-	CacheDir    string `json:"cache_dir"`
-	CacheCount  int    `json:"cached_analyses"`
+	Version    string `json:"version"`
+	Authed     bool   `json:"authenticated"`
+	APIBase    string `json:"api_base"`
+	ConfigPath string `json:"config_path"`
+	CacheDir   string `json:"cache_dir"`
+	CacheCount int    `json:"cached_analyses"`
 }
 
 // Run prints the current Supermodel status.
@@ -41,7 +41,7 @@ func Run(_ context.Context, opts Options) error {
 		CacheDir:   filepath.Join(config.Dir(), "cache"),
 	}
 	r.CacheCount = countCacheEntries(r.CacheDir)
-	return print(os.Stdout, r, ui.ParseFormat(opts.Output))
+	return render(os.Stdout, &r, ui.ParseFormat(opts.Output))
 }
 
 func countCacheEntries(dir string) int {
@@ -58,7 +58,7 @@ func countCacheEntries(dir string) int {
 	return n
 }
 
-func print(w io.Writer, r Report, fmt_ ui.Format) error {
+func render(w io.Writer, r *Report, fmt_ ui.Format) error {
 	if fmt_ == ui.FormatJSON {
 		return ui.JSON(w, r)
 	}

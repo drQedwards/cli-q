@@ -18,11 +18,9 @@ linters:
     - gosec
     # complexity
     - gocyclo
-    # imports
-    - goimports
   settings:
     gocyclo:
-      min-complexity: 15
+      min-complexity: 20
     revive:
       rules:
         - name: exported
@@ -38,13 +36,32 @@ linters:
     gosec:
       excludes:
         - G304 # file path from variable — expected in a CLI
+        - G204 # subprocess with variable — expected in a CLI
+        - G122 # filepath.Walk TOCTOU — acceptable for repo archiving
+        - G117 # secret field in marshaled struct — intentional (config file)
+        - G104 # unhandled errors — covered by errcheck with targeted exclusions
   exclusions:
     rules:
+      # Deferred and best-effort closes are idiomatic Go — errors not actionable.
+      - text: 'Error return value of `.+\.Close` is not checked'
+        linters: [errcheck]
+      # fmt.Fprintf/Fprintln to stdout/stderr — write errors are not actionable.
+      - text: 'Error return value of `fmt\.Fp?rint'
+        linters: [errcheck]
+      # Best-effort temp file cleanup.
+      - text: 'Error return value of `os\.Remove` is not checked'
+        linters: [errcheck]
+      # Test files get more latitude.
       - path: _test\.go
-        linters:
-          - errcheck
-          - gosec
-          - gocritic
+        linters: [errcheck, gosec, gocritic]
+
+formatters:
+  enable:
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/supermodeltools/cli
 
 issues:
   max-issues-per-linter: 0

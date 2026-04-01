@@ -23,13 +23,13 @@ type Options struct {
 
 // Match is a node in the graph that matches the query.
 type Match struct {
-	ID         string   `json:"id"`
-	Kind       string   `json:"kind"`
-	Name       string   `json:"name"`
-	File       string   `json:"file"`
-	Callers    []string `json:"callers,omitempty"`
-	Callees    []string `json:"callees,omitempty"`
-	DefinedIn  string   `json:"defined_in,omitempty"`
+	ID        string   `json:"id"`
+	Kind      string   `json:"kind"`
+	Name      string   `json:"name"`
+	File      string   `json:"file"`
+	Callers   []string `json:"callers,omitempty"`
+	Callees   []string `json:"callees,omitempty"`
+	DefinedIn string   `json:"defined_in,omitempty"`
 }
 
 // Run finds all graph nodes matching symbol and prints them.
@@ -121,7 +121,8 @@ func printMatches(w io.Writer, matches []Match, fmt_ ui.Format) error {
 	if fmt_ == ui.FormatJSON {
 		return ui.JSON(w, matches)
 	}
-	for _, m := range matches {
+	for i := range matches {
+		m := &matches[i]
 		fmt.Fprintf(w, "%s  %s", m.Kind, m.Name)
 		if m.File != "" {
 			fmt.Fprintf(w, "  (%s)", m.File)
