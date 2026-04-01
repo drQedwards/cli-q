@@ -34,3 +34,17 @@ jobs:
           SUPERMODEL_HOMEBREW_TAP_TOKEN: ${{ secrets.SUPERMODEL_HOMEBREW_TAP_TOKEN }}
           SUPERMODEL_SCOOP_BUCKET_TOKEN: ${{ secrets.SUPERMODEL_SCOOP_BUCKET_TOKEN }}
           SUPERMODEL_AUR_KEY: ${{ secrets.SUPERMODEL_AUR_KEY }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Publish npm package
+        working-directory: npm
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          npm version "$VERSION" --no-git-tag-version
+          npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.SUPERMODEL_NPM_TOKEN }}
