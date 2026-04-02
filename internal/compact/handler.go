@@ -487,7 +487,7 @@ func CompactDir(dir, outDir string) (Stats, error) {
 				return mkErr
 			}
 		}
-		return os.WriteFile(filepath.Clean(dest), compacted, 0o600)
+		return os.WriteFile(filepath.Clean(dest), compacted, 0o600) //nolint:gosec // dest is built from filepath.Walk output; traversal outside outDir is not possible
 	})
 	return stats, err
 }
