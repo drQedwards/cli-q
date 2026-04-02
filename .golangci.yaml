@@ -40,6 +40,9 @@ linters:
         - G122 # filepath.Walk TOCTOU — acceptable for repo archiving
         - G117 # secret field in marshaled struct — intentional (config file)
         - G104 # unhandled errors — covered by errcheck with targeted exclusions
+        - G301 # directory permissions 0755 — intentional for static site output
+        - G306 # file write permissions 0644 — intentional for static site output
+        - G703 # path traversal — output paths come from user-supplied CLI flags
   exclusions:
     rules:
       # Deferred and best-effort closes are idiomatic Go — errors not actionable.
@@ -48,9 +51,13 @@ linters:
       # fmt.Fprintf/Fprintln to stdout/stderr — write errors are not actionable.
       - text: 'Error return value of `fmt\.Fp?rint'
         linters: [errcheck]
-      # Best-effort temp file cleanup.
-      - text: 'Error return value of `os\.Remove` is not checked'
+      # Best-effort temp file/dir cleanup.
+      - text: 'Error return value of `os\.Remove(All)?` is not checked'
         linters: [errcheck]
+      # Ported packages from supermodeltools/arch-docs — style/complexity issues are
+      # acceptable in vendored/ported code; fixing them would cause needless upstream divergence.
+      - path: 'internal/archdocs/(graph2md|pssg)/'
+        linters: [gocritic, gocyclo, gosec, revive, ineffassign, staticcheck]
       # Test files get more latitude.
       - path: _test\.go
         linters: [errcheck, gosec, gocritic]
