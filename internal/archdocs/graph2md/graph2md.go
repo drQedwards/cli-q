@@ -585,60 +585,60 @@ func (c *renderContext) writeFileFrontmatter(sb *strings.Builder) {
 		desc += fmt.Sprintf(" %d imports, %d dependents.", depCount, ibCount)
 	}
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"File\"\n")
-	sb.WriteString(fmt.Sprintf("file_path: %q\n", path))
-	sb.WriteString(fmt.Sprintf("file_name: %q\n", name))
+	fmt.Fprintf(sb, "file_path: %q\n", path)
+	fmt.Fprintf(sb, "file_name: %q\n", name)
 	if lang != "" {
-		sb.WriteString(fmt.Sprintf("language: %q\n", lang))
+		fmt.Fprintf(sb, "language: %q\n", lang)
 	}
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
-	sb.WriteString(fmt.Sprintf("repo_url: %q\n", c.repoURL))
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
+	fmt.Fprintf(sb, "repo_url: %q\n", c.repoURL)
 
 	dir := filepath.Dir(path)
 	if dir != "" && dir != "." {
-		sb.WriteString(fmt.Sprintf("directory: %q\n", dir))
+		fmt.Fprintf(sb, "directory: %q\n", dir)
 		parts := strings.Split(dir, "/")
 		if len(parts) > 0 {
-			sb.WriteString(fmt.Sprintf("top_directory: %q\n", parts[0]))
+			fmt.Fprintf(sb, "top_directory: %q\n", parts[0])
 		}
 	}
 
 	ext := filepath.Ext(name)
 	if ext != "" {
-		sb.WriteString(fmt.Sprintf("extension: %q\n", ext))
+		fmt.Fprintf(sb, "extension: %q\n", ext)
 	}
 
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("domain: %q\n", d))
+		fmt.Fprintf(sb, "domain: %q\n", d)
 	}
 	if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("subdomain: %q\n", s))
+		fmt.Fprintf(sb, "subdomain: %q\n", s)
 	}
 
 	// File line count: use lineCount property, or compute from endLine
 	if lc := getNum(props, "lineCount"); lc > 0 {
-		sb.WriteString(fmt.Sprintf("line_count: %d\n", lc))
+		fmt.Fprintf(sb, "line_count: %d\n", lc)
 	} else if endLine := getNum(props, "endLine"); endLine > 0 {
 		startLine := getNum(props, "startLine")
 		if startLine <= 0 {
 			startLine = 1
 		}
-		sb.WriteString(fmt.Sprintf("start_line: %d\n", startLine))
-		sb.WriteString(fmt.Sprintf("end_line: %d\n", endLine))
-		sb.WriteString(fmt.Sprintf("line_count: %d\n", endLine-startLine+1))
+		fmt.Fprintf(sb, "start_line: %d\n", startLine)
+		fmt.Fprintf(sb, "end_line: %d\n", endLine)
+		fmt.Fprintf(sb, "line_count: %d\n", endLine-startLine+1)
 	}
 
-	sb.WriteString(fmt.Sprintf("import_count: %d\n", depCount))
-	sb.WriteString(fmt.Sprintf("imported_by_count: %d\n", ibCount))
+	fmt.Fprintf(sb, "import_count: %d\n", depCount)
+	fmt.Fprintf(sb, "imported_by_count: %d\n", ibCount)
 
 	funcCount := len(c.definesFunc[c.node.ID])
 	classCount := len(c.declaresClass[c.node.ID])
 	typeCount := len(c.definesType[c.node.ID])
-	sb.WriteString(fmt.Sprintf("function_count: %d\n", funcCount))
-	sb.WriteString(fmt.Sprintf("class_count: %d\n", classCount))
-	sb.WriteString(fmt.Sprintf("type_count: %d\n", typeCount))
+	fmt.Fprintf(sb, "function_count: %d\n", funcCount)
+	fmt.Fprintf(sb, "class_count: %d\n", classCount)
+	fmt.Fprintf(sb, "type_count: %d\n", typeCount)
 
 	c.writeTags(sb)
 }
@@ -658,36 +658,36 @@ func (c *renderContext) writeFunctionFrontmatter(sb *strings.Builder) {
 	}
 	desc += fmt.Sprintf(" from the %s codebase.", c.repoName)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Function\"\n")
-	sb.WriteString(fmt.Sprintf("function_name: %q\n", name))
+	fmt.Fprintf(sb, "function_name: %q\n", name)
 	if filePath != "" {
-		sb.WriteString(fmt.Sprintf("file_path: %q\n", filePath))
+		fmt.Fprintf(sb, "file_path: %q\n", filePath)
 		dir := filepath.Dir(filePath)
 		if dir != "" && dir != "." {
-			sb.WriteString(fmt.Sprintf("directory: %q\n", dir))
+			fmt.Fprintf(sb, "directory: %q\n", dir)
 		}
 	}
 	if lang != "" {
-		sb.WriteString(fmt.Sprintf("language: %q\n", lang))
+		fmt.Fprintf(sb, "language: %q\n", lang)
 	}
 	if startLine > 0 {
-		sb.WriteString(fmt.Sprintf("start_line: %d\n", startLine))
+		fmt.Fprintf(sb, "start_line: %d\n", startLine)
 	}
 	if endLine > 0 {
-		sb.WriteString(fmt.Sprintf("end_line: %d\n", endLine))
-		sb.WriteString(fmt.Sprintf("line_count: %d\n", endLine-startLine+1))
+		fmt.Fprintf(sb, "end_line: %d\n", endLine)
+		fmt.Fprintf(sb, "line_count: %d\n", endLine-startLine+1)
 	}
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
-	sb.WriteString(fmt.Sprintf("call_count: %d\n", len(c.calls[c.node.ID])))
-	sb.WriteString(fmt.Sprintf("called_by_count: %d\n", len(c.calledBy[c.node.ID])))
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
+	fmt.Fprintf(sb, "call_count: %d\n", len(c.calls[c.node.ID]))
+	fmt.Fprintf(sb, "called_by_count: %d\n", len(c.calledBy[c.node.ID]))
 
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("domain: %q\n", d))
+		fmt.Fprintf(sb, "domain: %q\n", d)
 	}
 	if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("subdomain: %q\n", s))
+		fmt.Fprintf(sb, "subdomain: %q\n", s)
 	}
 
 	c.writeTags(sb)
@@ -708,40 +708,40 @@ func (c *renderContext) writeClassFrontmatter(sb *strings.Builder) {
 	}
 	desc += fmt.Sprintf(" from the %s codebase.", c.repoName)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Class\"\n")
-	sb.WriteString(fmt.Sprintf("class_name: %q\n", name))
+	fmt.Fprintf(sb, "class_name: %q\n", name)
 	if filePath != "" {
-		sb.WriteString(fmt.Sprintf("file_path: %q\n", filePath))
+		fmt.Fprintf(sb, "file_path: %q\n", filePath)
 		dir := filepath.Dir(filePath)
 		if dir != "" && dir != "." {
-			sb.WriteString(fmt.Sprintf("directory: %q\n", dir))
+			fmt.Fprintf(sb, "directory: %q\n", dir)
 		}
 	}
 	if lang != "" {
-		sb.WriteString(fmt.Sprintf("language: %q\n", lang))
+		fmt.Fprintf(sb, "language: %q\n", lang)
 	}
 	if startLine > 0 {
-		sb.WriteString(fmt.Sprintf("start_line: %d\n", startLine))
+		fmt.Fprintf(sb, "start_line: %d\n", startLine)
 	}
 	if endLine > 0 {
-		sb.WriteString(fmt.Sprintf("end_line: %d\n", endLine))
-		sb.WriteString(fmt.Sprintf("line_count: %d\n", endLine-startLine+1))
+		fmt.Fprintf(sb, "end_line: %d\n", endLine)
+		fmt.Fprintf(sb, "line_count: %d\n", endLine-startLine+1)
 	}
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
 
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("domain: %q\n", d))
+		fmt.Fprintf(sb, "domain: %q\n", d)
 	}
 	if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("subdomain: %q\n", s))
+		fmt.Fprintf(sb, "subdomain: %q\n", s)
 	}
 
 	extends := c.extendsRel[c.node.ID]
 	if len(extends) > 0 {
 		names := c.resolveNames(extends)
-		sb.WriteString(fmt.Sprintf("extends: %q\n", strings.Join(names, ", ")))
+		fmt.Fprintf(sb, "extends: %q\n", strings.Join(names, ", "))
 	}
 
 	c.writeTags(sb)
@@ -762,34 +762,34 @@ func (c *renderContext) writeTypeFrontmatter(sb *strings.Builder) {
 	}
 	desc += fmt.Sprintf(" from the %s codebase.", c.repoName)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Type\"\n")
-	sb.WriteString(fmt.Sprintf("type_name: %q\n", name))
+	fmt.Fprintf(sb, "type_name: %q\n", name)
 	if filePath != "" {
-		sb.WriteString(fmt.Sprintf("file_path: %q\n", filePath))
+		fmt.Fprintf(sb, "file_path: %q\n", filePath)
 		dir := filepath.Dir(filePath)
 		if dir != "" && dir != "." {
-			sb.WriteString(fmt.Sprintf("directory: %q\n", dir))
+			fmt.Fprintf(sb, "directory: %q\n", dir)
 		}
 	}
 	if lang != "" {
-		sb.WriteString(fmt.Sprintf("language: %q\n", lang))
+		fmt.Fprintf(sb, "language: %q\n", lang)
 	}
 	if startLine > 0 {
-		sb.WriteString(fmt.Sprintf("start_line: %d\n", startLine))
+		fmt.Fprintf(sb, "start_line: %d\n", startLine)
 	}
 	if endLine > 0 {
-		sb.WriteString(fmt.Sprintf("end_line: %d\n", endLine))
-		sb.WriteString(fmt.Sprintf("line_count: %d\n", endLine-startLine+1))
+		fmt.Fprintf(sb, "end_line: %d\n", endLine)
+		fmt.Fprintf(sb, "line_count: %d\n", endLine-startLine+1)
 	}
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
 
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("domain: %q\n", d))
+		fmt.Fprintf(sb, "domain: %q\n", d)
 	}
 	if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
-		sb.WriteString(fmt.Sprintf("subdomain: %q\n", s))
+		fmt.Fprintf(sb, "subdomain: %q\n", s)
 	}
 
 	c.writeTags(sb)
@@ -810,14 +810,14 @@ func (c *renderContext) writeDomainFrontmatter(sb *strings.Builder) {
 	}
 	desc += fmt.Sprintf("Architectural overview of the %s domain in the %s codebase. Contains %d source files.", name, c.repoName, fileCount)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Domain\"\n")
-	sb.WriteString(fmt.Sprintf("domain: %q\n", name))
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
-	sb.WriteString(fmt.Sprintf("file_count: %d\n", fileCount))
+	fmt.Fprintf(sb, "domain: %q\n", name)
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
+	fmt.Fprintf(sb, "file_count: %d\n", fileCount)
 	if nodeDesc != "" {
-		sb.WriteString(fmt.Sprintf("summary: %q\n", nodeDesc))
+		fmt.Fprintf(sb, "summary: %q\n", nodeDesc)
 	}
 
 	c.writeTags(sb)
@@ -844,17 +844,17 @@ func (c *renderContext) writeSubdomainFrontmatter(sb *strings.Builder) {
 	}
 	desc += fmt.Sprintf(" in the %s codebase. Contains %d source files.", c.repoName, fileCount)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Subdomain\"\n")
-	sb.WriteString(fmt.Sprintf("subdomain: %q\n", name))
+	fmt.Fprintf(sb, "subdomain: %q\n", name)
 	if parentDomain != "" {
-		sb.WriteString(fmt.Sprintf("domain: %q\n", parentDomain))
+		fmt.Fprintf(sb, "domain: %q\n", parentDomain)
 	}
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
-	sb.WriteString(fmt.Sprintf("file_count: %d\n", fileCount))
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
+	fmt.Fprintf(sb, "file_count: %d\n", fileCount)
 	if nodeDesc != "" {
-		sb.WriteString(fmt.Sprintf("summary: %q\n", nodeDesc))
+		fmt.Fprintf(sb, "summary: %q\n", nodeDesc)
 	}
 
 	c.writeTags(sb)
@@ -892,21 +892,21 @@ func (c *renderContext) writeDirectoryFrontmatter(sb *strings.Builder) {
 	title := fmt.Sprintf("%s/ — %s Directory Structure", path, c.repoName)
 	desc := fmt.Sprintf("Directory listing for %s/ in the %s codebase. Contains %d files and %d subdirectories.", path, c.repoName, fileCount, subdirCount)
 
-	sb.WriteString(fmt.Sprintf("title: %q\n", title))
-	sb.WriteString(fmt.Sprintf("description: %q\n", desc))
+	fmt.Fprintf(sb, "title: %q\n", title)
+	fmt.Fprintf(sb, "description: %q\n", desc)
 	sb.WriteString("node_type: \"Directory\"\n")
-	sb.WriteString(fmt.Sprintf("dir_name: %q\n", name))
-	sb.WriteString(fmt.Sprintf("dir_path: %q\n", path))
-	sb.WriteString(fmt.Sprintf("repo: %q\n", c.repoName))
-	sb.WriteString(fmt.Sprintf("file_count: %d\n", fileCount))
-	sb.WriteString(fmt.Sprintf("subdir_count: %d\n", subdirCount))
-	sb.WriteString(fmt.Sprintf("function_count: %d\n", funcCount))
-	sb.WriteString(fmt.Sprintf("class_count: %d\n", classCount))
-	sb.WriteString(fmt.Sprintf("type_count: %d\n", typeCount))
+	fmt.Fprintf(sb, "dir_name: %q\n", name)
+	fmt.Fprintf(sb, "dir_path: %q\n", path)
+	fmt.Fprintf(sb, "repo: %q\n", c.repoName)
+	fmt.Fprintf(sb, "file_count: %d\n", fileCount)
+	fmt.Fprintf(sb, "subdir_count: %d\n", subdirCount)
+	fmt.Fprintf(sb, "function_count: %d\n", funcCount)
+	fmt.Fprintf(sb, "class_count: %d\n", classCount)
+	fmt.Fprintf(sb, "type_count: %d\n", typeCount)
 
 	parts := strings.Split(path, "/")
 	if len(parts) > 0 {
-		sb.WriteString(fmt.Sprintf("top_directory: %q\n", parts[0]))
+		fmt.Fprintf(sb, "top_directory: %q\n", parts[0])
 	}
 
 	c.writeTags(sb)
@@ -921,13 +921,13 @@ func (c *renderContext) writeFileBody(sb *strings.Builder) {
 	// Domain link
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
 		sb.WriteString("## Domain\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.domainLink(d)))
+		fmt.Fprintf(sb, "- %s\n", c.domainLink(d))
 		sb.WriteString("\n")
 
 		// Subdomain link (only show if domain exists)
 		if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
 			sb.WriteString("## Subdomains\n\n")
-			sb.WriteString(fmt.Sprintf("- %s\n", c.subdomainLink(s)))
+			fmt.Fprintf(sb, "- %s\n", c.subdomainLink(s))
 			sb.WriteString("\n")
 		}
 	}
@@ -981,7 +981,7 @@ func (c *renderContext) writeFileBody(sb *strings.Builder) {
 	// Source link
 	if path != "" && c.repoURL != "" {
 		sb.WriteString("## Source\n\n")
-		sb.WriteString(fmt.Sprintf("- <a href=\"%s/blob/main/%s\">View on GitHub</a>\n\n", c.repoURL, path))
+		fmt.Fprintf(sb, "- <a href=\"%s/blob/main/%s\">View on GitHub</a>\n\n", c.repoURL, path)
 	}
 }
 
@@ -993,19 +993,19 @@ func (c *renderContext) writeFunctionBody(sb *strings.Builder) {
 	// Defined In
 	if fileID, ok := c.fileOfFunc[c.node.ID]; ok {
 		sb.WriteString("## Defined In\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID))))
+		fmt.Fprintf(sb, "- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID)))
 		sb.WriteString("\n")
 	}
 
 	// Domain link
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
 		sb.WriteString("## Domain\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.domainLink(d)))
+		fmt.Fprintf(sb, "- %s\n", c.domainLink(d))
 		sb.WriteString("\n")
 
 		if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
 			sb.WriteString("## Subdomains\n\n")
-			sb.WriteString(fmt.Sprintf("- %s\n", c.subdomainLink(s)))
+			fmt.Fprintf(sb, "- %s\n", c.subdomainLink(s))
 			sb.WriteString("\n")
 		}
 	}
@@ -1037,7 +1037,7 @@ func (c *renderContext) writeFunctionBody(sb *strings.Builder) {
 		if startLine > 0 {
 			link += fmt.Sprintf("#L%d", startLine)
 		}
-		sb.WriteString(fmt.Sprintf("- <a href=\"%s\">View on GitHub</a>\n\n", link))
+		fmt.Fprintf(sb, "- <a href=\"%s\">View on GitHub</a>\n\n", link)
 	}
 }
 
@@ -1049,19 +1049,19 @@ func (c *renderContext) writeClassBody(sb *strings.Builder) {
 	// Defined In
 	if fileID, ok := c.fileOfClass[c.node.ID]; ok {
 		sb.WriteString("## Defined In\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID))))
+		fmt.Fprintf(sb, "- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID)))
 		sb.WriteString("\n")
 	}
 
 	// Domain link
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
 		sb.WriteString("## Domain\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.domainLink(d)))
+		fmt.Fprintf(sb, "- %s\n", c.domainLink(d))
 		sb.WriteString("\n")
 
 		if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
 			sb.WriteString("## Subdomains\n\n")
-			sb.WriteString(fmt.Sprintf("- %s\n", c.subdomainLink(s)))
+			fmt.Fprintf(sb, "- %s\n", c.subdomainLink(s))
 			sb.WriteString("\n")
 		}
 	}
@@ -1071,7 +1071,7 @@ func (c *renderContext) writeClassBody(sb *strings.Builder) {
 	if len(extends) > 0 {
 		sb.WriteString("## Extends\n\n")
 		for _, id := range extends {
-			sb.WriteString(fmt.Sprintf("- %s\n", c.internalLink(id, c.resolveName(id))))
+			fmt.Fprintf(sb, "- %s\n", c.internalLink(id, c.resolveName(id)))
 		}
 		sb.WriteString("\n")
 	}
@@ -1083,7 +1083,7 @@ func (c *renderContext) writeClassBody(sb *strings.Builder) {
 		if startLine > 0 {
 			link += fmt.Sprintf("#L%d", startLine)
 		}
-		sb.WriteString(fmt.Sprintf("- <a href=\"%s\">View on GitHub</a>\n\n", link))
+		fmt.Fprintf(sb, "- <a href=\"%s\">View on GitHub</a>\n\n", link)
 	}
 }
 
@@ -1095,19 +1095,19 @@ func (c *renderContext) writeTypeBody(sb *strings.Builder) {
 	// Defined In
 	if fileID, ok := c.fileOfType[c.node.ID]; ok {
 		sb.WriteString("## Defined In\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID))))
+		fmt.Fprintf(sb, "- %s\n", c.internalLink(fileID, c.resolveNameWithPath(fileID)))
 		sb.WriteString("\n")
 	}
 
 	// Domain link
 	if d, ok := c.belongsToDomain[c.node.ID]; ok {
 		sb.WriteString("## Domain\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.domainLink(d)))
+		fmt.Fprintf(sb, "- %s\n", c.domainLink(d))
 		sb.WriteString("\n")
 
 		if s, ok := c.belongsToSubdomain[c.node.ID]; ok {
 			sb.WriteString("## Subdomains\n\n")
-			sb.WriteString(fmt.Sprintf("- %s\n", c.subdomainLink(s)))
+			fmt.Fprintf(sb, "- %s\n", c.subdomainLink(s))
 			sb.WriteString("\n")
 		}
 	}
@@ -1118,7 +1118,7 @@ func (c *renderContext) writeTypeBody(sb *strings.Builder) {
 		if startLine > 0 {
 			link += fmt.Sprintf("#L%d", startLine)
 		}
-		sb.WriteString(fmt.Sprintf("- <a href=\"%s\">View on GitHub</a>\n\n", link))
+		fmt.Fprintf(sb, "- <a href=\"%s\">View on GitHub</a>\n\n", link)
 	}
 }
 
@@ -1150,7 +1150,7 @@ func (c *renderContext) writeSubdomainBody(sb *strings.Builder) {
 	// Domain link
 	if parentDomain := c.partOfDomain[c.node.ID]; parentDomain != "" {
 		sb.WriteString("## Domain\n\n")
-		sb.WriteString(fmt.Sprintf("- %s\n", c.domainLink(parentDomain)))
+		fmt.Fprintf(sb, "- %s\n", c.domainLink(parentDomain))
 		sb.WriteString("\n")
 	}
 
@@ -1511,7 +1511,7 @@ func (c *renderContext) writeFAQSection(sb *strings.Builder) {
 
 	sb.WriteString("## FAQs\n\n")
 	for _, faq := range faqs {
-		sb.WriteString(fmt.Sprintf("### %s\n\n%s\n\n", faq.q, faq.a))
+		fmt.Fprintf(sb, "### %s\n\n%s\n\n", faq.q, faq.a)
 	}
 }
 
@@ -1700,7 +1700,7 @@ func (c *renderContext) writeGraphData(sb *strings.Builder) {
 	if err != nil {
 		return
 	}
-	sb.WriteString(fmt.Sprintf("graph_data: %q\n", string(data)))
+	fmt.Fprintf(sb, "graph_data: %q\n", string(data))
 }
 
 // --- Mermaid Diagram (frontmatter) ---
@@ -1943,7 +1943,7 @@ func (c *renderContext) writeMermaidDiagram(sb *strings.Builder) {
 	}
 
 	diagram := strings.Join(lines, "\n")
-	sb.WriteString(fmt.Sprintf("mermaid_diagram: %q\n", diagram))
+	fmt.Fprintf(sb, "mermaid_diagram: %q\n", diagram)
 }
 
 // --- Architecture Map (frontmatter) ---
@@ -2013,7 +2013,7 @@ func (c *renderContext) writeArchMap(sb *strings.Builder) {
 	if err != nil {
 		return
 	}
-	sb.WriteString(fmt.Sprintf("arch_map: %q\n", string(data)))
+	fmt.Fprintf(sb, "arch_map: %q\n", string(data))
 }
 
 // writeLinkedList writes a sorted list of linked items.
@@ -2030,7 +2030,7 @@ func (c *renderContext) writeLinkedList(sb *strings.Builder, nodeIDs []string, l
 		return items[i].label < items[j].label
 	})
 	for _, item := range items {
-		sb.WriteString(fmt.Sprintf("- %s\n", linkFn(item.id)))
+		fmt.Fprintf(sb, "- %s\n", linkFn(item.id))
 	}
 	sb.WriteString("\n")
 }
@@ -2072,7 +2072,7 @@ func (c *renderContext) writeTags(sb *strings.Builder) {
 	if len(tags) > 0 {
 		sb.WriteString("tags:\n")
 		for _, t := range tags {
-			sb.WriteString(fmt.Sprintf("  - %q\n", t))
+			fmt.Fprintf(sb, "  - %q\n", t)
 		}
 	}
 }
