@@ -101,6 +101,7 @@ supermodel hermes install
 ## Key Commands
 
 ```bash
+supermodel docs                 # Generate static architecture documentation
 supermodel analyze              # Analyze the current repo and cache results
 supermodel dead-code            # List functions and files with no callers
 supermodel blast-radius <file>  # Show what's affected if this file changes
