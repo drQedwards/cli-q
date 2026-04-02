@@ -192,7 +192,7 @@ func shortenIdents(f *ast.File) {
 }
 
 // shortenFuncLocals renames long local identifiers inside fn.
-func shortenFuncLocals(fn *ast.FuncDecl) { //nolint:gocyclo
+func shortenFuncLocals(fn *ast.FuncDecl) { //nolint:gocyclo // multi-phase rename walk; splitting would obscure the algorithm
 	// Phase 1: collect all existing identifier names to avoid collisions.
 	existing := map[string]bool{}
 	ast.Inspect(fn, func(n ast.Node) bool {
@@ -334,7 +334,7 @@ func compactGeneric(src []byte, lang Language) []byte {
 // stripComments removes line and block comments from src.
 // It tracks string literal state to avoid treating comment-like sequences
 // inside strings as comments.
-func stripComments(src []byte, lang Language) []byte { //nolint:gocyclo
+func stripComments(src []byte, lang Language) []byte { //nolint:gocyclo // string-aware state machine; each branch handles one lexer state
 	out := make([]byte, 0, len(src))
 	i, n := 0, len(src)
 
@@ -487,7 +487,7 @@ func CompactDir(dir, outDir string) (Stats, error) {
 				return mkErr
 			}
 		}
-		return os.WriteFile(dest, compacted, 0o600)
+		return os.WriteFile(filepath.Clean(dest), compacted, 0o600)
 	})
 	return stats, err
 }

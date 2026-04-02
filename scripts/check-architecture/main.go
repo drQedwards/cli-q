@@ -29,6 +29,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // module is the Go module path for this repository.
@@ -50,7 +51,27 @@ var sharedKernel = map[string]bool{
 
 type graphResponse struct {
 	Nodes         []graphNode    `json:"nodes"`
+	Edges         []relationship `json:"edges"`
 	Relationships []relationship `json:"relationships"`
+}
+
+func (g *graphResponse) rels() []relationship {
+	if len(g.Relationships) > 0 {
+		return g.Relationships
+	}
+	return g.Edges
+}
+
+// jobResponse is the async envelope returned by the API.
+type jobResponse struct {
+	Status     string          `json:"status"`
+	RetryAfter int             `json:"retryAfter"`
+	Error      *string         `json:"error"`
+	Result     json.RawMessage `json:"result"`
+}
+
+type jobResult struct {
+	Graph graphResponse `json:"graph"`
 }
 
 type graphNode struct {
@@ -86,13 +107,13 @@ func main() {
 	if err != nil {
 		fatalf("API call failed: %v", err)
 	}
-	fmt.Printf("→ Checking %d nodes, %d relationships\n", len(graph.Nodes), len(graph.Relationships))
+	fmt.Printf("→ Checking %d nodes, %d relationships\n", len(graph.Nodes), len(graph.rels()))
 
 	// Build nodeID → internal package path (e.g. "internal/analyze")
 	nodePackage := buildPackageMap(graph.Nodes)
 
 	var violations []string
-	for _, rel := range graph.Relationships {
+	for _, rel := range graph.rels() {
 		if rel.Type != "IMPORTS" && rel.Type != "WILDCARD_IMPORTS" {
 			continue
 		}
@@ -218,6 +239,40 @@ func gitArchive() (string, error) {
 }
 
 func callAPI(apiBase, apiKey, zipPath string) (*graphResponse, error) {
+	ikey := idempotencyKey()
+	job, err := postZip(apiBase, apiKey, zipPath, ikey)
+	if err != nil {
+		return nil, err
+	}
+
+	for job.Status == "pending" || job.Status == "processing" {
+		wait := time.Duration(job.RetryAfter) * time.Second
+		if wait <= 0 {
+			wait = 5 * time.Second
+		}
+		fmt.Printf("→ Job %s, retrying in %s...\n", job.Status, wait)
+		time.Sleep(wait)
+		job, err = postZip(apiBase, apiKey, zipPath, ikey)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if job.Error != nil {
+		return nil, fmt.Errorf("analysis failed: %s", *job.Error)
+	}
+	if job.Status != "completed" {
+		return nil, fmt.Errorf("unexpected job status: %s", job.Status)
+	}
+
+	var result jobResult
+	if err := json.Unmarshal(job.Result, &result); err != nil {
+		return nil, fmt.Errorf("parse job result: %w", err)
+	}
+	return &result.Graph, nil
+}
+
+func postZip(apiBase, apiKey, zipPath, ikey string) (*jobResponse, error) {
 	f, err := os.Open(zipPath)
 	if err != nil {
 		return nil, err
@@ -241,7 +296,7 @@ func callAPI(apiBase, apiKey, zipPath string) (*graphResponse, error) {
 	}
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	req.Header.Set("X-Api-Key", apiKey)
-	req.Header.Set("Idempotency-Key", idempotencyKey())
+	req.Header.Set("Idempotency-Key", ikey)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -253,7 +308,7 @@ func callAPI(apiBase, apiKey, zipPath string) (*graphResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		snippet := string(body)
 		if len(snippet) > 400 {
 			snippet = snippet[:400] + "..."
@@ -261,11 +316,11 @@ func callAPI(apiBase, apiKey, zipPath string) (*graphResponse, error) {
 		return nil, fmt.Errorf("HTTP %d: %s", resp.StatusCode, snippet)
 	}
 
-	var g graphResponse
-	if err := json.Unmarshal(body, &g); err != nil {
+	var job jobResponse
+	if err := json.Unmarshal(body, &job); err != nil {
 		return nil, fmt.Errorf("parse response: %w", err)
 	}
-	return &g, nil
+	return &job, nil
 }
 
 func idempotencyKey() string {
