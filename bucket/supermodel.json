@@ -1,0 +1,15 @@
+{
+    "version": "0.3.0",
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/supermodeltools/cli/releases/download/v0.3.0/supermodel_windows_amd64.zip",
+            "bin": [
+                "supermodel.exe"
+            ],
+            "hash": "a336afedbbd156b313891121d74b2d1e6739de8da9e54559e6a4f52c66255dda"
+        }
+    },
+    "homepage": "https://supermodeltools.com",
+    "license": "MIT",
+    "description": "Give your AI coding agent a map of your codebase"
+}
