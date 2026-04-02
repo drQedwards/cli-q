@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -67,7 +68,7 @@ func TestWalkZip_SkipsSkipDirs(t *testing.T) {
 	}
 	entries := readZipEntries(t, dest)
 	for name := range entries {
-		if filepath.HasPrefix(name, "vendor") {
+		if strings.HasPrefix(name, "vendor/") || name == "vendor" {
 			t.Errorf("should not contain vendor entry: %s", name)
 		}
 	}

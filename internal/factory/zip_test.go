@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -82,7 +83,7 @@ func TestWalkZip_SkipsNodeModules(t *testing.T) {
 
 	entries := zipEntries(t, dest)
 	for name := range entries {
-		if filepath.HasPrefix(name, "node_modules") {
+		if strings.HasPrefix(name, "node_modules/") || name == "node_modules" {
 			t.Errorf("zip should not contain node_modules entry: %s", name)
 		}
 	}

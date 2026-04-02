@@ -69,7 +69,7 @@ func TestHashFile_HexEncoded(t *testing.T) {
 		t.Errorf("SHA-256 hex should be 64 chars, got %d: %q", len(h), h)
 	}
 	for _, c := range h {
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f')) {
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
 			t.Errorf("non-hex character %q in hash %q", c, h)
 			break
 		}

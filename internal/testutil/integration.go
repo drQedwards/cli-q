@@ -119,7 +119,7 @@ func greet(name string) string {
 `,
 	}
 	for name, content := range files {
-		if err := os.WriteFile(dir+"/"+name, []byte(content), 0600); err != nil {
+		if err := os.WriteFile(dir+"/"+name, []byte(content), 0o600); err != nil {
 			t.Fatalf("write %s: %v", name, err)
 		}
 	}
