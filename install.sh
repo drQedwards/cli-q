@@ -11,8 +11,8 @@ INSTALL_DIR="${SUPERMODEL_INSTALL_DIR:-/usr/local/bin}"
 # Detect OS
 OS="$(uname -s)"
 case "$OS" in
-  Linux)  OS="Linux" ;;
-  Darwin) OS="Darwin" ;;
+  Linux)  OS="linux" ;;
+  Darwin) OS="darwin" ;;
   *)
     echo "Unsupported OS: $OS"
     exit 1
