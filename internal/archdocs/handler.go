@@ -313,14 +313,14 @@ func Run(ctx context.Context, cfg *config.Config, dir string, opts Options) erro
 	defer os.RemoveAll(tmpDir)
 
 	graphPath := filepath.Join(tmpDir, "graph.json")
-	if err := os.WriteFile(graphPath, rawResult, 0600); err != nil {
+	if err := os.WriteFile(graphPath, rawResult, 0o600); err != nil {
 		return fmt.Errorf("write graph JSON: %w", err)
 	}
 
 	// Convert graph → markdown
 	ui.Step("Generating markdown from graph…")
 	contentDir := filepath.Join(tmpDir, "content")
-	if err := os.MkdirAll(contentDir, 0755); err != nil {
+	if err := os.MkdirAll(contentDir, 0o755); err != nil {
 		return fmt.Errorf("create content dir: %w", err)
 	}
 	if err := graph2md.Run(graphPath, contentDir, repoName, repoURL, opts.MaxEntities); err != nil {
@@ -408,7 +408,7 @@ func resolveTemplates(override string) (dir string, cleanup func(), err error) {
 			os.RemoveAll(tmp)
 			return "", nil, err
 		}
-		if err := os.WriteFile(filepath.Join(tmp, e.Name()), data, 0600); err != nil {
+		if err := os.WriteFile(filepath.Join(tmp, e.Name()), data, 0o600); err != nil {
 			os.RemoveAll(tmp)
 			return "", nil, err
 		}
@@ -433,7 +433,7 @@ func writePssgConfig(path, siteName, baseURL, repoURL, repoName, contentDir, tpl
 		siteName,   // llms_txt.title
 		repoName,   // llms_txt.description
 	)
-	return os.WriteFile(path, []byte(content), 0600)
+	return os.WriteFile(path, []byte(content), 0o600)
 }
 
 // extractPathPrefix returns the path component of a URL (e.g. "/myrepo" from
