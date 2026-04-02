@@ -1,4 +1,4 @@
-package analyze
+package archdocs
 
 import (
 	"archive/zip"

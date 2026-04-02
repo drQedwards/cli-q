@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/supermodeltools/cli/internal/analyze"
 	"github.com/supermodeltools/cli/internal/api"
 	"github.com/supermodeltools/cli/internal/archdocs/graph2md"
 	pssgbuild "github.com/supermodeltools/cli/internal/archdocs/pssg/build"
@@ -284,7 +283,7 @@ func Run(ctx context.Context, cfg *config.Config, dir string, opts Options) erro
 	}
 
 	ui.Step("Creating repository archive…")
-	zipPath, err := analyze.CreateZip(absDir)
+	zipPath, err := createZip(absDir)
 	if err != nil {
 		return fmt.Errorf("create archive: %w", err)
 	}
