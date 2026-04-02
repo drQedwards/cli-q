@@ -138,20 +138,20 @@ func Run(inputFiles, outputDir, repoName, repoURL string, maxEntities int) error
 	importedBy := make(map[string][]string)
 	callsRel := make(map[string][]string)
 	calledByRel := make(map[string][]string)
-	containsFile := make(map[string][]string)   // directory -> files
-	definesFunc := make(map[string][]string)     // file -> functions
-	declaresClass := make(map[string][]string)   // file -> classes
-	definesType := make(map[string][]string)     // file -> types
-	childDir := make(map[string][]string)        // directory -> subdirectories
-	belongsToDomain := make(map[string]string)   // node -> domain name
+	containsFile := make(map[string][]string)     // directory -> files
+	definesFunc := make(map[string][]string)      // file -> functions
+	declaresClass := make(map[string][]string)    // file -> classes
+	definesType := make(map[string][]string)      // file -> types
+	childDir := make(map[string][]string)         // directory -> subdirectories
+	belongsToDomain := make(map[string]string)    // node -> domain name
 	belongsToSubdomain := make(map[string]string) // node -> subdomain name
-	partOfDomain := make(map[string]string)      // subdomain node ID -> domain name
-	extendsRel := make(map[string][]string)      // class -> parent classes
+	partOfDomain := make(map[string]string)       // subdomain node ID -> domain name
+	extendsRel := make(map[string][]string)       // class -> parent classes
 
 	// Reverse lookups for "Defined In"
-	fileOfFunc := make(map[string]string)        // function nodeID -> file nodeID
-	fileOfClass := make(map[string]string)       // class nodeID -> file nodeID
-	fileOfType := make(map[string]string)        // type nodeID -> file nodeID
+	fileOfFunc := make(map[string]string)  // function nodeID -> file nodeID
+	fileOfClass := make(map[string]string) // class nodeID -> file nodeID
+	fileOfType := make(map[string]string)  // type nodeID -> file nodeID
 
 	// Domain/subdomain node lookups by name
 	domainNodeByName := make(map[string]string)    // domain name -> domain node ID
@@ -323,8 +323,8 @@ func Run(inputFiles, outputDir, repoName, repoURL string, maxEntities int) error
 	}
 
 	// Collect all domain members for Domain/Subdomain body sections
-	domainFiles := make(map[string][]string)       // domain name -> file node IDs
-	subdomainFiles := make(map[string][]string)     // subdomain name -> file node IDs
+	domainFiles := make(map[string][]string)    // domain name -> file node IDs
+	subdomainFiles := make(map[string][]string) // subdomain name -> file node IDs
 	for nodeID, domName := range belongsToDomain {
 		n := nodeLookup[nodeID]
 		if n != nil && hasLabel(n, "File") {
@@ -419,36 +419,36 @@ func Run(inputFiles, outputDir, repoName, repoURL string, maxEntities int) error
 	var count int
 	for _, e := range entries {
 		ctx := &renderContext{
-			node:               &e.node,
-			label:              e.label,
-			slug:               e.slug,
-			repoName:           repoName,
-			repoURL:            repoURL,
-			nodeLookup:         nodeLookup,
-			slugLookup:         slugLookup,
-			imports:            imports,
-			importedBy:         importedBy,
-			calls:              callsRel,
-			calledBy:           calledByRel,
-			containsFile:       containsFile,
-			definesFunc:        definesFunc,
-			declaresClass:      declaresClass,
-			definesType:        definesType,
-			childDir:           childDir,
-			extendsRel:         extendsRel,
-			belongsToDomain:    belongsToDomain,
-			belongsToSubdomain: belongsToSubdomain,
-			partOfDomain:       partOfDomain,
-			domainFiles:        domainFiles,
-			subdomainFiles:     subdomainFiles,
-			fileOfFunc:         fileOfFunc,
-			fileOfClass:        fileOfClass,
-			fileOfType:         fileOfType,
+			node:                &e.node,
+			label:               e.label,
+			slug:                e.slug,
+			repoName:            repoName,
+			repoURL:             repoURL,
+			nodeLookup:          nodeLookup,
+			slugLookup:          slugLookup,
+			imports:             imports,
+			importedBy:          importedBy,
+			calls:               callsRel,
+			calledBy:            calledByRel,
+			containsFile:        containsFile,
+			definesFunc:         definesFunc,
+			declaresClass:       declaresClass,
+			definesType:         definesType,
+			childDir:            childDir,
+			extendsRel:          extendsRel,
+			belongsToDomain:     belongsToDomain,
+			belongsToSubdomain:  belongsToSubdomain,
+			partOfDomain:        partOfDomain,
+			domainFiles:         domainFiles,
+			subdomainFiles:      subdomainFiles,
+			fileOfFunc:          fileOfFunc,
+			fileOfClass:         fileOfClass,
+			fileOfType:          fileOfType,
 			domainNodeByName:    domainNodeByName,
 			subdomainNodeByName: subdomainNodeByName,
-			domainSubdomains:   domainSubdomains,
-			subdomainFuncs:     subdomainFuncs,
-			subdomainClasses:   subdomainClasses,
+			domainSubdomains:    domainSubdomains,
+			subdomainFuncs:      subdomainFuncs,
+			subdomainClasses:    subdomainClasses,
 		}
 
 		md := ctx.generateMarkdown()
@@ -465,21 +465,21 @@ func Run(inputFiles, outputDir, repoName, repoURL string, maxEntities int) error
 }
 
 type renderContext struct {
-	node                                          *Node
-	label, slug, repoName, repoURL               string
-	nodeLookup                                    map[string]*Node
-	slugLookup                                    map[string]string
-	imports, importedBy                           map[string][]string
-	calls, calledBy                               map[string][]string
-	containsFile, definesFunc, declaresClass      map[string][]string
-	definesType, childDir, extendsRel             map[string][]string
-	belongsToDomain, belongsToSubdomain           map[string]string
-	partOfDomain                                  map[string]string
-	domainFiles, subdomainFiles                   map[string][]string
-	fileOfFunc, fileOfClass, fileOfType           map[string]string
-	domainNodeByName, subdomainNodeByName         map[string]string
-	domainSubdomains                              map[string][]string
-	subdomainFuncs, subdomainClasses              map[string][]string
+	node                                     *Node
+	label, slug, repoName, repoURL           string
+	nodeLookup                               map[string]*Node
+	slugLookup                               map[string]string
+	imports, importedBy                      map[string][]string
+	calls, calledBy                          map[string][]string
+	containsFile, definesFunc, declaresClass map[string][]string
+	definesType, childDir, extendsRel        map[string][]string
+	belongsToDomain, belongsToSubdomain      map[string]string
+	partOfDomain                             map[string]string
+	domainFiles, subdomainFiles              map[string][]string
+	fileOfFunc, fileOfClass, fileOfType      map[string]string
+	domainNodeByName, subdomainNodeByName    map[string]string
+	domainSubdomains                         map[string][]string
+	subdomainFuncs, subdomainClasses         map[string][]string
 }
 
 // internalLink returns an HTML <a> tag linking to the entity page for nodeID,

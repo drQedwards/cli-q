@@ -16,64 +16,64 @@ import (
 
 // Engine is the template rendering engine.
 type Engine struct {
-	tmpl    *template.Template
-	cfg     *config.Config
+	tmpl *template.Template
+	cfg  *config.Config
 }
 
 // EntityPageContext is the template context for entity (recipe) pages.
 type EntityPageContext struct {
-	Site            config.SiteConfig
-	Entity          *entity.Entity
-	Slug            string
-	URL             string
-	CanonicalURL    string
-	Breadcrumbs     []Breadcrumb
-	Pairings        []*entity.Entity
-	Enrichment      map[string]interface{}
-	AffiliateLinks  []affiliate.Link
-	CookModePrompt  string
-	JsonLD          template.HTML
-	Taxonomies      []taxonomy.Taxonomy
-	AllTaxonomies   []taxonomy.Taxonomy
-	ValidSlugs      map[string]map[string]bool
-	Contributors    map[string]interface{}
-	OG              OGMeta
-	ChartData       template.JS
-	CTA             config.CTAConfig
-	SourceCode      string
-	SourceLang      string
+	Site           config.SiteConfig
+	Entity         *entity.Entity
+	Slug           string
+	URL            string
+	CanonicalURL   string
+	Breadcrumbs    []Breadcrumb
+	Pairings       []*entity.Entity
+	Enrichment     map[string]interface{}
+	AffiliateLinks []affiliate.Link
+	CookModePrompt string
+	JsonLD         template.HTML
+	Taxonomies     []taxonomy.Taxonomy
+	AllTaxonomies  []taxonomy.Taxonomy
+	ValidSlugs     map[string]map[string]bool
+	Contributors   map[string]interface{}
+	OG             OGMeta
+	ChartData      template.JS
+	CTA            config.CTAConfig
+	SourceCode     string
+	SourceLang     string
 }
 
 // HomepageContext is the template context for the homepage.
 type HomepageContext struct {
-	Site          config.SiteConfig
-	Entities      []*entity.Entity
-	Taxonomies    []taxonomy.Taxonomy
-	Favorites     []*entity.Entity
-	JsonLD        template.HTML
-	EntityCount   int
-	Contributors  map[string]interface{}
-	OG            OGMeta
-	ChartData     template.JS
-	CTA           config.CTAConfig
-	ArchData      template.JS
+	Site         config.SiteConfig
+	Entities     []*entity.Entity
+	Taxonomies   []taxonomy.Taxonomy
+	Favorites    []*entity.Entity
+	JsonLD       template.HTML
+	EntityCount  int
+	Contributors map[string]interface{}
+	OG           OGMeta
+	ChartData    template.JS
+	CTA          config.CTAConfig
+	ArchData     template.JS
 }
 
 // HubPageContext is the template context for taxonomy hub (category) pages.
 type HubPageContext struct {
-	Site           config.SiteConfig
-	Taxonomy       taxonomy.Taxonomy
-	Entry          taxonomy.Entry
-	Entities       []*entity.Entity
-	Pagination     taxonomy.PaginationInfo
-	JsonLD         template.HTML
-	Breadcrumbs    []Breadcrumb
-	AllTaxonomies  []taxonomy.Taxonomy
-	Contributors   map[string]interface{}
+	Site               config.SiteConfig
+	Taxonomy           taxonomy.Taxonomy
+	Entry              taxonomy.Entry
+	Entities           []*entity.Entity
+	Pagination         taxonomy.PaginationInfo
+	JsonLD             template.HTML
+	Breadcrumbs        []Breadcrumb
+	AllTaxonomies      []taxonomy.Taxonomy
+	Contributors       map[string]interface{}
 	ContributorProfile map[string]interface{}
-	OG             OGMeta
-	ChartData      template.JS
-	CTA            config.CTAConfig
+	OG                 OGMeta
+	ChartData          template.JS
+	CTA                config.CTAConfig
 }
 
 // TaxonomyIndexContext is the template context for taxonomy index pages.
@@ -116,11 +116,11 @@ type AllEntitiesPageContext struct {
 	JsonLD        template.HTML
 	Breadcrumbs   []Breadcrumb
 	AllTaxonomies []taxonomy.Taxonomy
-	EntityCount    int
-	TotalEntities  int
-	OG             OGMeta
-	ChartData      template.JS
-	CTA            config.CTAConfig
+	EntityCount   int
+	TotalEntities int
+	OG            OGMeta
+	ChartData     template.JS
+	CTA           config.CTAConfig
 }
 
 // StaticPageContext is the template context for static pages.

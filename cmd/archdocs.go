@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+
 	"github.com/supermodeltools/cli/internal/archdocs"
 	"github.com/supermodeltools/cli/internal/config"
 )

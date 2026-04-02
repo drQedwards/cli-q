@@ -13,7 +13,7 @@ type Config struct {
 	Sitemap    SitemapConfig    `yaml:"sitemap"`
 	RSS        RSSConfig        `yaml:"rss"`
 	Robots     RobotsConfig     `yaml:"robots"`
-	LlmsTxt    LlmsTxtConfig   `yaml:"llms_txt"`
+	LlmsTxt    LlmsTxtConfig    `yaml:"llms_txt"`
 	Templates  TemplatesConfig  `yaml:"templates"`
 	Output     OutputConfig     `yaml:"output"`
 	Extra      ExtraConfig      `yaml:"extra"`
@@ -46,9 +46,9 @@ type PathsConfig struct {
 }
 
 type DataConfig struct {
-	Format      string       `yaml:"format"`
-	EntityType  string       `yaml:"entity_type"`
-	EntitySlug  EntitySlug   `yaml:"entity_slug"`
+	Format       string        `yaml:"format"`
+	EntityType   string        `yaml:"entity_type"`
+	EntitySlug   EntitySlug    `yaml:"entity_slug"`
 	BodySections []BodySection `yaml:"body_sections"`
 }
 
@@ -63,18 +63,18 @@ type BodySection struct {
 }
 
 type TaxonomyConfig struct {
-	Name                     string `yaml:"name"`
-	Label                    string `yaml:"label"`
-	LabelSingular            string `yaml:"label_singular"`
-	Field                    string `yaml:"field"`
-	MultiValue               bool   `yaml:"multi_value"`
-	MinEntities              int    `yaml:"min_entities"`
-	LetterPageThreshold      int    `yaml:"letter_page_threshold"`
-	Invert                   bool   `yaml:"invert"`
-	EnrichmentOverrideField  string `yaml:"enrichment_override_field"`
-	Template                 string `yaml:"template"`
-	IndexTemplate            string `yaml:"index_template"`
-	LetterTemplate           string `yaml:"letter_template"`
+	Name                    string `yaml:"name"`
+	Label                   string `yaml:"label"`
+	LabelSingular           string `yaml:"label_singular"`
+	Field                   string `yaml:"field"`
+	MultiValue              bool   `yaml:"multi_value"`
+	MinEntities             int    `yaml:"min_entities"`
+	LetterPageThreshold     int    `yaml:"letter_page_threshold"`
+	Invert                  bool   `yaml:"invert"`
+	EnrichmentOverrideField string `yaml:"enrichment_override_field"`
+	Template                string `yaml:"template"`
+	IndexTemplate           string `yaml:"index_template"`
+	LetterTemplate          string `yaml:"letter_template"`
 
 	// Description templates (Go template strings evaluated with .Name, .Count, .Start, .End)
 	HubTitle           string `yaml:"hub_title"`
@@ -100,38 +100,38 @@ type SchemaConfig struct {
 }
 
 type AffiliatesConfig struct {
-	Providers []AffiliateProviderConfig `yaml:"providers"`
-	SearchTermPaths []string            `yaml:"search_term_paths"`
+	Providers       []AffiliateProviderConfig `yaml:"providers"`
+	SearchTermPaths []string                  `yaml:"search_term_paths"`
 }
 
 type AffiliateProviderConfig struct {
-	Name       string `yaml:"name"`
-	URLTemplate string `yaml:"url_template"`
-	EnvVar     string `yaml:"env_var"`
-	AlwaysInclude bool `yaml:"always_include"`
+	Name          string `yaml:"name"`
+	URLTemplate   string `yaml:"url_template"`
+	EnvVar        string `yaml:"env_var"`
+	AlwaysInclude bool   `yaml:"always_include"`
 }
 
 type EnrichmentConfig struct {
-	CacheDir string `yaml:"cache_dir"`
+	CacheDir                string `yaml:"cache_dir"`
 	IngredientOverrideField string `yaml:"ingredient_override_field"`
 }
 
 type SitemapConfig struct {
-	MaxURLsPerFile int                       `yaml:"max_urls_per_file"`
-	Priorities     map[string]string         `yaml:"priorities"`
-	ChangeFreqs    map[string]string         `yaml:"change_freqs"`
+	MaxURLsPerFile int               `yaml:"max_urls_per_file"`
+	Priorities     map[string]string `yaml:"priorities"`
+	ChangeFreqs    map[string]string `yaml:"change_freqs"`
 }
 
 type RSSConfig struct {
-	Enabled       bool   `yaml:"enabled"`
-	MainFeed      string `yaml:"main_feed"`
-	CategoryFeeds bool   `yaml:"category_feeds"`
+	Enabled          bool   `yaml:"enabled"`
+	MainFeed         string `yaml:"main_feed"`
+	CategoryFeeds    bool   `yaml:"category_feeds"`
 	CategoryTaxonomy string `yaml:"category_taxonomy"`
 }
 
 type RobotsConfig struct {
-	AllowAll   bool     `yaml:"allow_all"`
-	ExtraBots  []string `yaml:"extra_bots"`
+	AllowAll  bool     `yaml:"allow_all"`
+	ExtraBots []string `yaml:"extra_bots"`
 }
 
 type LlmsTxtConfig struct {
@@ -141,12 +141,12 @@ type LlmsTxtConfig struct {
 }
 
 type TemplatesConfig struct {
-	Entity         string            `yaml:"entity"`
-	Homepage       string            `yaml:"homepage"`
-	Hub            string            `yaml:"hub"`
-	TaxonomyIndex  string            `yaml:"taxonomy_index"`
-	Letter         string            `yaml:"letter"`
-	StaticPages    map[string]string `yaml:"static_pages"`
+	Entity        string            `yaml:"entity"`
+	Homepage      string            `yaml:"homepage"`
+	Hub           string            `yaml:"hub"`
+	TaxonomyIndex string            `yaml:"taxonomy_index"`
+	Letter        string            `yaml:"letter"`
+	StaticPages   map[string]string `yaml:"static_pages"`
 }
 
 type OutputConfig struct {

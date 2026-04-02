@@ -507,7 +507,7 @@ func (b *Builder) renderEntityPage(
 		ChartData:      template.JS(entityChartJSON),
 		SourceCode:     sourceCode,
 		SourceLang:     sourceLang,
-		CTA: b.cfg.Extra.CTA,
+		CTA:            b.cfg.Extra.CTA,
 		OG: render.OGMeta{
 			Title:       title + " \u2014 " + b.cfg.Site.Name,
 			Description: description,

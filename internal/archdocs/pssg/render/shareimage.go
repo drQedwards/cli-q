@@ -7,12 +7,12 @@ import (
 
 // Share image constants
 const (
-	svgWidth  = 1200
-	svgHeight = 630
-	svgBG     = "#0f1117"
-	svgText   = "#e4e4e7"
-	svgMuted  = "#71717a"
-	svgAccent = "#5B7B5E"
+	svgWidth   = 1200
+	svgHeight  = 630
+	svgBG      = "#0f1117"
+	svgText    = "#e4e4e7"
+	svgMuted   = "#71717a"
+	svgAccent  = "#5B7B5E"
 	svgAccent2 = "#C4956A"
 )
 

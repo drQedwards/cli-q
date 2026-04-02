@@ -36,10 +36,20 @@ func BuildFuncMap() template.FuncMap {
 		"add":          func(a, b int) int { return a + b },
 		"sub":          func(a, b int) int { return a - b },
 		"mul":          func(a, b int) int { return a * b },
-		"div":          func(a, b int) int { if b == 0 { return 0 }; return a / b },
-		"mod":          func(a, b int) int { if b == 0 { return 0 }; return a % b },
-		"addf":         func(a, b float64) float64 { return a + b },
-		"mulf":         func(a, b float64) float64 { return a * b },
+		"div": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return a / b
+		},
+		"mod": func(a, b int) int {
+			if b == 0 {
+				return 0
+			}
+			return a % b
+		},
+		"addf": func(a, b float64) float64 { return a + b },
+		"mulf": func(a, b float64) float64 { return a * b },
 
 		// Duration functions
 		"durationMinutes": durationMinutes,
@@ -47,13 +57,13 @@ func BuildFuncMap() template.FuncMap {
 		"formatDuration":  formatDuration,
 
 		// Collection functions
-		"first":  first,
-		"last":   last,
-		"seq":    seq,
-		"dict":   dict,
-		"slice":  sliceHelper,
-		"len":    length,
-		"sort":   sortStrings,
+		"first":   first,
+		"last":    last,
+		"seq":     seq,
+		"dict":    dict,
+		"slice":   sliceHelper,
+		"len":     length,
+		"sort":    sortStrings,
 		"reverse": reverseStrings,
 		"min":     minInt,
 		"max":     maxInt,
@@ -95,7 +105,7 @@ func BuildFuncMap() template.FuncMap {
 		"ge": func(a, b int) bool { return a >= b },
 
 		// Misc
-		"toJSON": toJSON,
+		"toJSON":   toJSON,
 		"noescape": func(s string) template.HTML { return template.HTML(s) },
 	}
 }

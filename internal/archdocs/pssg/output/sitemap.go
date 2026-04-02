@@ -28,9 +28,9 @@ type urlEntry struct {
 }
 
 type sitemapIndex struct {
-	XMLName  xml.Name        `xml:"sitemapindex"`
-	XMLNS    string          `xml:"xmlns,attr"`
-	Sitemaps []sitemapEntry  `xml:"sitemap"`
+	XMLName  xml.Name       `xml:"sitemapindex"`
+	XMLNS    string         `xml:"xmlns,attr"`
+	Sitemaps []sitemapEntry `xml:"sitemap"`
 }
 
 type sitemapEntry struct {
