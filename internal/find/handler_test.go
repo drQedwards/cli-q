@@ -1,0 +1,204 @@
+package find
+
+import (
+	"bytes"
+	"encoding/json"
+	"strings"
+	"testing"
+
+	"github.com/supermodeltools/cli/internal/api"
+	"github.com/supermodeltools/cli/internal/ui"
+)
+
+// ── search ────────────────────────────────────────────────────────────────────
+
+func TestSearch_BasicMatch(t *testing.T) {
+	g := makeGraph()
+	matches := search(g, "handler", "")
+	if len(matches) == 0 {
+		t.Fatal("expected matches for 'handler'")
+	}
+	for _, m := range matches {
+		if !strings.Contains(strings.ToLower(m.Name), "handler") {
+			t.Errorf("match %q does not contain 'handler'", m.Name)
+		}
+	}
+}
+
+func TestSearch_CaseInsensitive(t *testing.T) {
+	g := makeGraph()
+	lower := search(g, "handler", "")
+	upper := search(g, "HANDLER", "")
+	if len(lower) != len(upper) {
+		t.Errorf("case-insensitive: lower=%d upper=%d", len(lower), len(upper))
+	}
+}
+
+func TestSearch_KindFilter(t *testing.T) {
+	g := makeGraph()
+	// Filter to Function only
+	matches := search(g, "handler", "Function")
+	for _, m := range matches {
+		if m.Kind != "Function" {
+			t.Errorf("kind filter: expected Function, got %q", m.Kind)
+		}
+	}
+}
+
+func TestSearch_KindFilterExcludesOtherKinds(t *testing.T) {
+	g := makeGraph()
+	// Only File nodes matching "handler"
+	matches := search(g, "handler", "File")
+	for _, m := range matches {
+		if m.Kind != "File" {
+			t.Errorf("kind filter File: got %q", m.Kind)
+		}
+	}
+}
+
+func TestSearch_NoMatch(t *testing.T) {
+	g := makeGraph()
+	matches := search(g, "nonexistent_xyz_qrs", "")
+	if len(matches) != 0 {
+		t.Errorf("no-match: want 0, got %d", len(matches))
+	}
+}
+
+func TestSearch_SortedByKindThenName(t *testing.T) {
+	g := makeGraph()
+	matches := search(g, "a", "") // broad match
+	for i := 1; i < len(matches); i++ {
+		if matches[i-1].Kind > matches[i].Kind {
+			t.Errorf("not sorted by kind: %q > %q", matches[i-1].Kind, matches[i].Kind)
+		}
+		if matches[i-1].Kind == matches[i].Kind && matches[i-1].Name > matches[i].Name {
+			t.Errorf("not sorted by name within kind: %q > %q", matches[i-1].Name, matches[i].Name)
+		}
+	}
+}
+
+func TestSearch_CallersAndCallees(t *testing.T) {
+	// caller calls target calls callee
+	g := &api.Graph{
+		Nodes: []api.Node{
+			{ID: "caller", Labels: []string{"Function"}, Properties: map[string]any{"name": "caller"}},
+			{ID: "target", Labels: []string{"Function"}, Properties: map[string]any{"name": "target"}},
+			{ID: "callee", Labels: []string{"Function"}, Properties: map[string]any{"name": "callee"}},
+		},
+		Relationships: []api.Relationship{
+			{ID: "r1", Type: "CALLS", StartNode: "caller", EndNode: "target"},
+			{ID: "r2", Type: "CALLS", StartNode: "target", EndNode: "callee"},
+		},
+	}
+	matches := search(g, "target", "")
+	if len(matches) != 1 {
+		t.Fatalf("want 1 match, got %d", len(matches))
+	}
+	m := matches[0]
+	if len(m.Callers) != 1 || m.Callers[0] != "caller" {
+		t.Errorf("callers: want [caller], got %v", m.Callers)
+	}
+	if len(m.Callees) != 1 || m.Callees[0] != "callee" {
+		t.Errorf("callees: want [callee], got %v", m.Callees)
+	}
+}
+
+func TestSearch_DefinesFunction(t *testing.T) {
+	g := &api.Graph{
+		Nodes: []api.Node{
+			{ID: "file1", Labels: []string{"File"}, Properties: map[string]any{"path": "auth/handler.go"}},
+			{ID: "fn1", Labels: []string{"Function"}, Properties: map[string]any{"name": "authenticate"}},
+		},
+		Relationships: []api.Relationship{
+			{ID: "r1", Type: "DEFINES_FUNCTION", StartNode: "file1", EndNode: "fn1"},
+		},
+	}
+	matches := search(g, "authenticate", "Function")
+	if len(matches) != 1 {
+		t.Fatalf("want 1 match, got %d", len(matches))
+	}
+	if matches[0].DefinedIn != "auth/handler.go" {
+		t.Errorf("defined_in: want 'auth/handler.go', got %q", matches[0].DefinedIn)
+	}
+}
+
+// ── printMatches ──────────────────────────────────────────────────────────────
+
+func TestPrintMatches_JSON(t *testing.T) {
+	matches := []Match{
+		{ID: "n1", Kind: "Function", Name: "handleAuth", File: "auth/handler.go"},
+		{ID: "n2", Kind: "File", Name: "main.go", File: "main.go"},
+	}
+	var buf bytes.Buffer
+	if err := printMatches(&buf, matches, ui.FormatJSON); err != nil {
+		t.Fatalf("printMatches JSON: %v", err)
+	}
+	var decoded []map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, buf.String())
+	}
+	if len(decoded) != 2 {
+		t.Errorf("want 2 items, got %d", len(decoded))
+	}
+}
+
+func TestPrintMatches_Human(t *testing.T) {
+	matches := []Match{
+		{ID: "n1", Kind: "Function", Name: "handleAuth", File: "auth/handler.go", Callers: []string{"main"}},
+	}
+	var buf bytes.Buffer
+	if err := printMatches(&buf, matches, ui.FormatHuman); err != nil {
+		t.Fatalf("printMatches human: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{"Function", "handleAuth", "auth/handler.go", "main"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("should contain %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestPrintMatches_HumanNoFile(t *testing.T) {
+	matches := []Match{
+		{ID: "n1", Kind: "Function", Name: "doThing"},
+	}
+	var buf bytes.Buffer
+	if err := printMatches(&buf, matches, ui.FormatHuman); err != nil {
+		t.Fatalf("printMatches: %v", err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "doThing") {
+		t.Errorf("should contain function name:\n%s", out)
+	}
+}
+
+func TestPrintMatches_HumanShowsMatchCount(t *testing.T) {
+	matches := []Match{
+		{ID: "n1", Kind: "Function", Name: "foo"},
+	}
+	var buf bytes.Buffer
+	if err := printMatches(&buf, matches, ui.FormatHuman); err != nil {
+		t.Fatal(err)
+	}
+	out := buf.String()
+	if !strings.Contains(out, "1 match") {
+		t.Errorf("should show match count:\n%s", out)
+	}
+}
+
+// ── helpers ───────────────────────────────────────────────────────────────────
+
+func makeGraph() *api.Graph {
+	return &api.Graph{
+		Nodes: []api.Node{
+			{ID: "file1", Labels: []string{"File"}, Properties: map[string]any{"path": "auth/handler.go"}},
+			{ID: "file2", Labels: []string{"File"}, Properties: map[string]any{"path": "main.go"}},
+			{ID: "fn1", Labels: []string{"Function"}, Properties: map[string]any{"name": "handleRequest"}},
+			{ID: "fn2", Labels: []string{"Function"}, Properties: map[string]any{"name": "parseToken"}},
+			{ID: "fn3", Labels: []string{"Function"}, Properties: map[string]any{"name": "main"}},
+		},
+		Relationships: []api.Relationship{
+			{ID: "r1", Type: "CALLS", StartNode: "fn3", EndNode: "fn1"},
+		},
+	}
+}

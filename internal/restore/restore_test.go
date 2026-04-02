@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/supermodeltools/cli/internal/api"
 )
@@ -1197,6 +1198,97 @@ func writeFile(t *testing.T, dir, name, content string) {
 	}
 	if err := os.WriteFile(path, []byte(content), 0600); err != nil {
 		t.Fatalf("write %s: %v", path, err)
+	}
+}
+
+// ── humanDuration ─────────────────────────────────────────────────────────────
+
+func TestHumanDuration_Seconds(t *testing.T) {
+	got := humanDuration(30 * time.Second)
+	if !strings.Contains(got, "seconds") {
+		t.Errorf("want 'seconds', got %q", got)
+	}
+	if !strings.Contains(got, "30") {
+		t.Errorf("want '30', got %q", got)
+	}
+}
+
+func TestHumanDuration_Minutes(t *testing.T) {
+	got := humanDuration(5 * time.Minute)
+	if !strings.Contains(got, "minutes") {
+		t.Errorf("want 'minutes', got %q", got)
+	}
+	if !strings.Contains(got, "5") {
+		t.Errorf("want '5', got %q", got)
+	}
+}
+
+func TestHumanDuration_Hours(t *testing.T) {
+	got := humanDuration(3 * time.Hour)
+	if !strings.Contains(got, "hours") {
+		t.Errorf("want 'hours', got %q", got)
+	}
+}
+
+func TestHumanDuration_Days(t *testing.T) {
+	got := humanDuration(48 * time.Hour)
+	if !strings.Contains(got, "days") {
+		t.Errorf("want 'days', got %q", got)
+	}
+	if !strings.Contains(got, "2") {
+		t.Errorf("want '2', got %q", got)
+	}
+}
+
+func TestHumanDuration_JustUnderMinute(t *testing.T) {
+	got := humanDuration(59 * time.Second)
+	if !strings.Contains(got, "seconds") {
+		t.Errorf("59s should be seconds, got %q", got)
+	}
+}
+
+// ── cleanPyDep ────────────────────────────────────────────────────────────────
+
+func TestCleanPyDep_PlainName(t *testing.T) {
+	if got := cleanPyDep("requests"); got != "requests" {
+		t.Errorf("plain name: got %q", got)
+	}
+}
+
+func TestCleanPyDep_VersionConstraint(t *testing.T) {
+	for _, input := range []string{"requests>=2.0", "requests==2.28.0", "requests<=3.0", "requests!=1.0", "requests~=2.0", "requests>2", "requests<3"} {
+		got := cleanPyDep(input)
+		if got != "requests" {
+			t.Errorf("cleanPyDep(%q) = %q, want 'requests'", input, got)
+		}
+	}
+}
+
+func TestCleanPyDep_InlineComment(t *testing.T) {
+	got := cleanPyDep("requests>=2.0 # http library")
+	if got != "requests" {
+		t.Errorf("inline comment: got %q, want 'requests'", got)
+	}
+}
+
+func TestCleanPyDep_Extras(t *testing.T) {
+	got := cleanPyDep("requests[security]>=2.0")
+	if got != "requests" {
+		t.Errorf("extras: got %q, want 'requests'", got)
+	}
+}
+
+func TestCleanPyDep_Semicolon(t *testing.T) {
+	got := cleanPyDep("requests>=2.0;python_version>='3.6'")
+	if got != "requests" {
+		t.Errorf("semicolon: got %q, want 'requests'", got)
+	}
+}
+
+func TestCleanPyDep_WithWhitespace(t *testing.T) {
+	got := cleanPyDep("  requests  ")
+	if got != "requests" {
+		t.Errorf("whitespace: got %q, want 'requests'", got)
 	}
 }
 

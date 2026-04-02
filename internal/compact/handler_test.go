@@ -3,6 +3,8 @@ package compact
 import (
 	"go/parser"
 	"go/token"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -467,5 +469,122 @@ func TestDetectLanguage(t *testing.T) {
 		if got := DetectLanguage(c.file); got != c.want {
 			t.Errorf("DetectLanguage(%q) = %q, want %q", c.file, got, c.want)
 		}
+	}
+}
+
+// --- Stats.TokenReduction / Stats.String -------------------------------------
+
+func TestStats_TokenReduction(t *testing.T) {
+	s := Stats{OriginalBytes: 1000, CompactedBytes: 600}
+	if got := s.TokenReduction(); got != 40 {
+		t.Errorf("TokenReduction = %.1f, want 40.0", got)
+	}
+}
+
+func TestStats_TokenReductionZero(t *testing.T) {
+	var s Stats
+	if got := s.TokenReduction(); got != 0 {
+		t.Errorf("zero stats: TokenReduction = %.1f, want 0", got)
+	}
+}
+
+func TestStats_String(t *testing.T) {
+	s := Stats{Files: 5, OriginalBytes: 2000, CompactedBytes: 1000}
+	got := s.String()
+	for _, want := range []string{"5 files", "2000", "1000", "50.0%"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("Stats.String() should contain %q, got: %s", want, got)
+		}
+	}
+}
+
+func TestStats_StringTokenApproximation(t *testing.T) {
+	s := Stats{Files: 1, OriginalBytes: 400, CompactedBytes: 200}
+	got := s.String()
+	// 400/4 = 100 original tokens, 200/4 = 50 compacted tokens
+	if !strings.Contains(got, "100") {
+		t.Errorf("Stats.String() should contain original token count ~100, got: %s", got)
+	}
+	if !strings.Contains(got, "50") {
+		t.Errorf("Stats.String() should contain compacted token count ~50, got: %s", got)
+	}
+}
+
+// --- CompactDir --------------------------------------------------------------
+
+func TestCompactDir_InPlace(t *testing.T) {
+	dir := t.TempDir()
+	src := []byte("// Package foo\npackage foo\n\n// Add adds.\nfunc Add(a, b int) int {\n\treturn a + b\n}\n")
+	if err := os.WriteFile(filepath.Join(dir, "foo.go"), src, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	stats, err := CompactDir(dir, "")
+	if err != nil {
+		t.Fatalf("CompactDir: %v", err)
+	}
+	if stats.Files != 1 {
+		t.Errorf("files: want 1, got %d", stats.Files)
+	}
+	if stats.OriginalBytes != len(src) {
+		t.Errorf("original bytes: want %d, got %d", len(src), stats.OriginalBytes)
+	}
+	if stats.CompactedBytes >= stats.OriginalBytes {
+		t.Errorf("expected compaction, original=%d compacted=%d", stats.OriginalBytes, stats.CompactedBytes)
+	}
+}
+
+func TestCompactDir_ToOutDir(t *testing.T) {
+	src := t.TempDir()
+	out := t.TempDir()
+	code := []byte("// Package x\npackage x\nfunc Noop() {}\n")
+	if err := os.WriteFile(filepath.Join(src, "x.go"), code, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	stats, err := CompactDir(src, out)
+	if err != nil {
+		t.Fatalf("CompactDir: %v", err)
+	}
+	if stats.Files != 1 {
+		t.Errorf("files: want 1, got %d", stats.Files)
+	}
+	// Output file must exist
+	if _, err := os.Stat(filepath.Join(out, "x.go")); err != nil {
+		t.Errorf("output file not created: %v", err)
+	}
+	// Source file must be unchanged
+	orig, _ := os.ReadFile(filepath.Join(src, "x.go"))
+	if string(orig) != string(code) {
+		t.Error("source file should be unchanged when outDir is set")
+	}
+}
+
+func TestCompactDir_SkipsUnknownFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "README.md"), []byte("# readme"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\nfunc main(){}\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	stats, err := CompactDir(dir, "")
+	if err != nil {
+		t.Fatalf("CompactDir: %v", err)
+	}
+	if stats.Files != 1 {
+		t.Errorf("should skip README.md, want 1 file, got %d", stats.Files)
+	}
+}
+
+func TestCompactDir_EmptyDir(t *testing.T) {
+	dir := t.TempDir()
+	stats, err := CompactDir(dir, "")
+	if err != nil {
+		t.Fatalf("CompactDir empty: %v", err)
+	}
+	if stats.Files != 0 {
+		t.Errorf("empty dir: want 0 files, got %d", stats.Files)
 	}
 }
