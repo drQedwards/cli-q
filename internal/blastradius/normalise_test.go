@@ -18,7 +18,10 @@ func TestNormalise_RelativePath(t *testing.T) {
 }
 
 func TestNormalise_AbsolutePath(t *testing.T) {
-	got := normalise("/repo", "/repo/internal/api/client.go")
+	// Use a real temp dir so the path works on all platforms.
+	repoDir := t.TempDir()
+	abs := repoDir + "/internal/api/client.go"
+	got := normalise(repoDir, abs)
 	want := "internal/api/client.go"
 	if got != want {
 		t.Errorf("normalise absolute: got %q, want %q", got, want)

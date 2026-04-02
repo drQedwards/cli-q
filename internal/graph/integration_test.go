@@ -1,3 +1,5 @@
+//go:build integration
+
 package graph_test
 
 import (
