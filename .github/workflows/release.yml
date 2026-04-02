@@ -31,8 +31,6 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SUPERMODEL_HOMEBREW_TAP_TOKEN: ${{ secrets.SUPERMODEL_HOMEBREW_TAP_TOKEN }}
-          SUPERMODEL_SCOOP_BUCKET_TOKEN: ${{ secrets.SUPERMODEL_SCOOP_BUCKET_TOKEN }}
           SUPERMODEL_AUR_KEY: ${{ secrets.SUPERMODEL_AUR_KEY }}
 
       - uses: actions/setup-node@v4
@@ -86,7 +84,9 @@ jobs:
 
       - name: Install via Homebrew
         if: matrix.name == 'homebrew'
-        run: brew install supermodeltools/tap/supermodel
+        run: |
+          brew tap supermodeltools/cli https://github.com/supermodeltools/cli
+          brew install supermodeltools/cli/supermodel
 
       - name: Install Scoop
         if: matrix.name == 'scoop'
@@ -99,7 +99,7 @@ jobs:
         if: matrix.name == 'scoop'
         shell: pwsh
         run: |
-          scoop bucket add supermodeltools https://github.com/supermodeltools/scoop-bucket
+          scoop bucket add supermodeltools https://github.com/supermodeltools/cli
           scoop install supermodel
 
       - name: Smoke test

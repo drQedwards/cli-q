@@ -79,7 +79,8 @@ release:
 
     **macOS / Linux (Homebrew)**
     ```sh
-    brew install supermodeltools/tap/supermodel
+    brew tap supermodeltools/cli https://github.com/supermodeltools/cli
+    brew install supermodeltools/cli/supermodel
     ```
 
     **macOS / Linux (curl)**
@@ -89,7 +90,7 @@ release:
 
     **Windows (Scoop)**
     ```sh
-    scoop bucket add supermodel https://github.com/supermodeltools/scoop-bucket
+    scoop bucket add supermodel https://github.com/supermodeltools/cli
     scoop install supermodel
     ```
 
@@ -100,13 +101,13 @@ release:
 
     **Full changelog**: https://github.com/supermodeltools/cli/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-# Homebrew tap — pushes Formula/supermodel.rb to supermodeltools/homebrew-tap
+# Homebrew tap — pushes Formula/supermodel.rb to supermodeltools/cli
 brews:
   - name: supermodel
     repository:
       owner: supermodeltools
-      name: homebrew-tap
-      token: "{{ .Env.SUPERMODEL_HOMEBREW_TAP_TOKEN }}"
+      name: cli
+      token: "{{ .Env.GITHUB_TOKEN }}"
     commit_author:
       name: supermodel-bot
       email: abe@supermodel.software
@@ -119,12 +120,13 @@ brews:
     test: |
       system "#{bin}/supermodel", "version"
 
-# Scoop bucket — pushes supermodel.json to supermodeltools/scoop-bucket
+# Scoop bucket — pushes bucket/supermodel.json to supermodeltools/cli
 scoops:
-  - repository:
+  - directory: bucket
+    repository:
       owner: supermodeltools
-      name: scoop-bucket
-      token: "{{ .Env.SUPERMODEL_SCOOP_BUCKET_TOKEN }}"
+      name: cli
+      token: "{{ .Env.GITHUB_TOKEN }}"
     commit_author:
       name: supermodel-bot
       email: abe@supermodel.software
