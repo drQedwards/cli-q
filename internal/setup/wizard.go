@@ -11,8 +11,9 @@ import (
 
 	"github.com/manifoldco/promptui"
 
-	"github.com/supermodeltools/cli/internal/analyze"
+	"github.com/supermodeltools/cli/internal/auth"
 	"github.com/supermodeltools/cli/internal/config"
+	"github.com/supermodeltools/cli/internal/files"
 )
 
 // ANSI color codes
@@ -38,9 +39,8 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	fmt.Printf("  %sMake your coding agents %s3× faster%s, %s50%%+ cheaper%s, and %smore accurate%s%s.\n",
 		reset, bWhite, reset, bWhite, reset, bWhite, reset, reset)
 	fmt.Println()
-	fmt.Printf("  %sInjects a live code graph next to your source files so agents pick it%s\n", dWhite, reset)
-	fmt.Printf("  %sup automatically through their native grep, cat, and rg calls — no%s\n", dWhite, reset)
-	fmt.Printf("  %sprompt engineering, no extra context windows, no new tools to learn.%s\n", dWhite, reset)
+	fmt.Printf("  %s.graph files appear next to your source code. Your agent reads them%s\n", dWhite, reset)
+	fmt.Printf("  %sautomatically via grep and cat — no prompt changes, no new tools.%s\n", dWhite, reset)
 	fmt.Println()
 
 	// ── Step 1: Authentication ──────────────────────────────────────
@@ -48,11 +48,18 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	fmt.Println()
 
 	if cfg.APIKey == "" {
-		fmt.Printf("  %sRun 'supermodel login' first, then re-run 'supermodel setup'.%s\n\n", yellow, reset)
-		return nil
+		fmt.Printf("  %sOpening your browser to sign in and generate an API key…%s\n\n", dWhite, reset)
+		if err := auth.Login(ctx); err != nil {
+			return fmt.Errorf("authentication failed — run 'supermodel login' to try again")
+		}
+		// Reload config to pick up the saved key.
+		if reloaded, loadErr := config.Load(); loadErr == nil {
+			cfg = reloaded
+		}
 	}
-	fmt.Printf("     %sUsing key%s %s%s%s\n", dim, reset, bWhite, maskKey(cfg.APIKey), reset)
-	fmt.Printf("  %s✓%s  Authentication\n", green, reset)
+
+	fmt.Printf("     %sKey%s  %s%s%s\n", dim, reset, bWhite, maskKey(cfg.APIKey), reset)
+	fmt.Printf("  %s✓%s  Authenticated\n", green, reset)
 	fmt.Println()
 
 	// ── Step 2: Repository ─────────────────────────────────────────
@@ -73,23 +80,60 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	fmt.Printf("  %s✓%s  Repository\n", green, reset)
 	fmt.Println()
 
-	// ── Step 3: File mode ──────────────────────────────────────────
+	// ── Step 3: Claude Code hook ───────────────────────────────────
+	hookNote := ""
+
+	fmt.Printf("  %s◆%s  Claude Code hook\n", cyan, reset)
+	fmt.Println()
+
+	switch detectClaude() {
+	case true:
+		fmt.Printf("  %sInstalls a PostToolUse hook that regenerates .graph files every%s\n", dWhite, reset)
+		fmt.Printf("  %stime Claude writes or edits a file — keeps context always fresh.%s\n", dWhite, reset)
+		fmt.Println()
+
+		if confirmYN("Install Claude Code hook?", true) {
+			installed, err := installHook(repoDir)
+			switch {
+			case err != nil:
+				fmt.Fprintf(os.Stderr, "  %sWarning: could not install hook: %v%s\n", yellow, err, reset)
+			case installed:
+				hookNote = "installed in .claude/settings.json"
+				fmt.Printf("  %s✓%s  Hook installed\n", green, reset)
+			default:
+				hookNote = "already in .claude/settings.json"
+				fmt.Printf("  %s✓%s  Hook already installed\n", green, reset)
+			}
+		} else {
+			fmt.Printf("  %s–%s  Skipped\n", dim, reset)
+		}
+	default:
+		fmt.Printf("  %sClaude Code not detected. Add this to .claude/settings.json:%s\n", dWhite, reset)
+		fmt.Println()
+		fmt.Printf("  %s{%s\n", dim, reset)
+		fmt.Printf("  %s  \"hooks\": {%s\n", dim, reset)
+		fmt.Printf("  %s    \"PostToolUse\": [{%s\n", dim, reset)
+		fmt.Printf("  %s      \"matcher\": \"Write|Edit\",%s\n", dim, reset)
+		fmt.Printf("  %s      \"hooks\": [{\"type\": \"command\", \"command\": \"supermodel hook\"}]%s\n", dim, reset)
+		fmt.Printf("  %s    }]%s\n", dim, reset)
+		fmt.Printf("  %s  }%s\n", dim, reset)
+		fmt.Printf("  %s}%s\n", dim, reset)
+	}
+	fmt.Println()
+
+	// ── Step 4: File mode ─────────────────────────────────────────
 	fmt.Printf("  %s◆%s  File mode\n", cyan, reset)
 	fmt.Println()
-	fmt.Printf("  %sFile mode writes a .graph file next to each source file in your repo.%s\n", dWhite, reset)
-	fmt.Printf("  %sAI agents pick these up automatically through grep, cat, and rg — no%s\n", dWhite, reset)
-	fmt.Printf("  %sprompt engineering, no extra context windows, no new tools to learn.%s\n", dWhite, reset)
+	fmt.Printf("  %sWrites a .graph file next to each source file in your repo.%s\n", dWhite, reset)
+	fmt.Printf("  %sAgents read them automatically via grep and cat — no extra%s\n", dWhite, reset)
+	fmt.Printf("  %sprompt changes, no new tools to learn.%s\n", dWhite, reset)
 	fmt.Println()
-	fmt.Printf("  %sKeep files updated with 'supermodel watch' in the background, or run%s\n", dWhite, reset)
-	fmt.Printf("  %s'supermodel analyze' once to generate them on demand.%s\n", dWhite, reset)
-	fmt.Println()
-	fmt.Printf("  %sDisable at any time with: supermodel clean%s\n", dWhite, reset)
+	fmt.Printf("  %sDisable at any time with:%s %ssupermodel clean%s\n", dWhite, reset, bWhite, reset)
 	fmt.Println()
 
 	filesEnabled := confirmYN("Enable file mode?", true)
 	fmt.Println()
 
-	// Persist file mode setting
 	cfg.Files = boolPtr(filesEnabled)
 	if err := cfg.Save(); err != nil {
 		fmt.Fprintf(os.Stderr, "  %sWarning: could not save config: %v%s\n", yellow, err, reset)
@@ -98,87 +142,42 @@ func Run(ctx context.Context, cfg *config.Config) error {
 	if filesEnabled {
 		fmt.Printf("  %s✓%s  File mode enabled\n", green, reset)
 	} else {
-		fmt.Printf("  %s✓%s  File mode disabled\n", green, reset)
+		fmt.Printf("  %s–%s  File mode disabled\n", dim, reset)
 	}
 	fmt.Println()
-
-	// ── Step 4: Claude Code hook (only if file mode enabled) ───────
-	hookInstalled := false
-	hookNote := "not installed"
-
-	if filesEnabled {
-		fmt.Printf("  %s◆%s  Claude Code hook\n", cyan, reset)
-		fmt.Println()
-
-		switch detectClaude() {
-		case true:
-			fmt.Printf("  %sInstalling a PostToolUse hook keeps your .graph files updated every%s\n", dWhite, reset)
-			fmt.Printf("  %stime Claude Code writes or edits a file — no manual re-runs needed.%s\n", dWhite, reset)
-			fmt.Println()
-
-			if confirmYN("Install Claude Code hook?", true) {
-				installed, err := installHook(repoDir)
-				switch {
-				case err != nil:
-					fmt.Fprintf(os.Stderr, "  %sWarning: could not install hook: %v%s\n", yellow, err, reset)
-				case installed:
-					hookInstalled = true
-					hookNote = "installed in .claude/settings.json"
-					fmt.Printf("  %s✓%s  Hook installed\n", green, reset)
-				default:
-					fmt.Printf("  %s✓%s  Hook already installed\n", green, reset)
-					hookInstalled = true
-					hookNote = "already in .claude/settings.json"
-				}
-			}
-		default:
-			fmt.Printf("  %sClaude Code not detected. You can install the hook later by adding%s\n", dWhite, reset)
-			fmt.Printf("  %sthis to .claude/settings.json in your repo:%s\n", dWhite, reset)
-			fmt.Println()
-			fmt.Printf("  %s{%s\n", dim, reset)
-			fmt.Printf("  %s  \"hooks\": {%s\n", dim, reset)
-			fmt.Printf("  %s    \"PostToolUse\": [{%s\n", dim, reset)
-			fmt.Printf("  %s      \"matcher\": \"Write|Edit\",%s\n", dim, reset)
-			fmt.Printf("  %s      \"hooks\": [{\"type\": \"command\", \"command\": \"supermodel hook\"}]%s\n", dim, reset)
-			fmt.Printf("  %s    }]%s\n", dim, reset)
-			fmt.Printf("  %s  }%s\n", dim, reset)
-			fmt.Printf("  %s}%s\n", dim, reset)
-		}
-		fmt.Println()
-	}
 
 	// ── Summary ────────────────────────────────────────────────────
 	fmt.Printf("  %s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", dim, reset)
 	fmt.Println()
 	fmt.Printf("  %s✓%s  Setup complete\n", bGreen, reset)
 	fmt.Println()
-
 	fileModeStr := "disabled"
 	if filesEnabled {
 		fileModeStr = "enabled"
 	}
 	fmt.Printf("     %sFile mode%s    %s%s%s\n", dim, reset, bWhite, fileModeStr, reset)
-	if filesEnabled {
+	if hookNote != "" {
 		fmt.Printf("     %sHook%s         %s%s%s\n", dim, reset, bWhite, hookNote, reset)
 	}
-	fmt.Println()
-	fmt.Printf("  %sNext steps:%s\n", dWhite, reset)
-	fmt.Println()
-	fmt.Printf("     %ssupermodel analyze%s        %sgenerate graph files now%s\n", bWhite, reset, dim, reset)
-	fmt.Printf("     %ssupermodel watch%s          %skeep files updated as you code%s\n", bWhite, reset, dim, reset)
 	fmt.Println()
 	fmt.Printf("  %s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", dim, reset)
 	fmt.Println()
 
-	_ = hookInstalled
+	// ── Start watch ────────────────────────────────────────────────
+	fmt.Printf("  %sStarting watch mode…%s\n", bWhite, reset)
+	fmt.Println()
+	fmt.Printf("  %sGenerates your graph now, then stays running to keep it%s\n", dWhite, reset)
+	fmt.Printf("  %supdated as you edit files. Your agent reads the result via%s\n", dWhite, reset)
+	fmt.Printf("  %sgrep and cat — no extra steps needed.%s\n", dWhite, reset)
+	fmt.Println()
+	fmt.Printf("  %sPress %sCtrl+C%s%s to stop.%s\n", dWhite, bWhite, reset, dWhite, reset)
+	fmt.Printf("  %sRun %ssupermodel watch%s%s to restart at any time.%s\n", dWhite, bWhite, reset, dWhite, reset)
+	fmt.Println()
 
-	if confirmYN("Run 'supermodel analyze' now?", true) {
-		fmt.Println()
-		return analyze.Run(ctx, cfg, repoDir, analyze.Options{})
-	}
-
-	return nil
+	return files.Watch(ctx, cfg, repoDir, files.WatchOptions{})
 }
+
+func boolPtr(b bool) *bool { return &b }
 
 // maskKey returns a display-safe version of the API key.
 func maskKey(key string) string {
@@ -234,7 +233,7 @@ func installHook(repoDir string) (bool, error) {
 
 	const hookCmd = "supermodel hook"
 
-	// Check if already installed
+	// Check if already installed.
 	if hooks, ok := settings["hooks"].(map[string]interface{}); ok {
 		if existing, ok := hooks["PostToolUse"].([]interface{}); ok {
 			for _, entry := range existing {
@@ -283,30 +282,6 @@ func installHook(repoDir string) (bool, error) {
 }
 
 // ── UI Helpers ──────────────────────────────────────────────────────
-
-// selectMenu shows an arrow-key navigable list and returns the selected index.
-func selectMenu(label string, items []string, cursorPos int) int {
-	sel := promptui.Select{
-		Label:     label,
-		Items:     items,
-		CursorPos: cursorPos,
-		Size:      len(items),
-		HideHelp:  true,
-		Templates: &promptui.SelectTemplates{
-			Label:    fmt.Sprintf("  %s{{ . }}%s", dim, reset),
-			Active:   fmt.Sprintf("  %s▸%s {{ . | cyan }}", green, reset),
-			Inactive: "    {{ . }}",
-			Selected: fmt.Sprintf("  %s✔%s {{ . | cyan }}", green, reset),
-		},
-	}
-
-	idx, _, err := sel.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "\n  %sCancelled.%s\n\n", dim, reset)
-		os.Exit(0)
-	}
-	return idx
-}
 
 // confirmYN shows a Y/N prompt navigable with arrow keys.
 func confirmYN(label string, defaultYes bool) bool {
@@ -358,8 +333,3 @@ func promptText(label, defaultVal string) string {
 	}
 	return strings.TrimSpace(result)
 }
-
-func boolPtr(b bool) *bool { return &b }
-
-// keep selectMenu referenced to avoid unused import if callers don't use it directly
-var _ = selectMenu
