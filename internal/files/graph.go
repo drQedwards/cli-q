@@ -45,6 +45,34 @@ type Cache struct {
 	FileDomain map[string]string      // filePath → domain name
 }
 
+// GraphStats summarises what was mapped after a generate or incremental update.
+type GraphStats struct {
+	SourceFiles       int
+	Functions         int
+	Relationships     int
+	DeadFunctionCount int  // functions with no callers (proxy for unreachable code)
+	FromCache         bool // true when data was loaded from a local cache
+}
+
+// computeStats derives a GraphStats from a SidecarIR and its built Cache.
+func computeStats(ir *api.SidecarIR, c *Cache) GraphStats {
+	s := GraphStats{
+		Relationships: len(ir.Graph.Relationships),
+	}
+	for _, n := range ir.Graph.Nodes {
+		switch {
+		case n.HasLabel("File"):
+			s.SourceFiles++
+		case n.HasLabel("Function"):
+			s.Functions++
+			if len(c.Callers[n.ID]) == 0 {
+				s.DeadFunctionCount++
+			}
+		}
+	}
+	return s
+}
+
 // NewCache creates an empty Cache.
 func NewCache() *Cache {
 	return &Cache{
