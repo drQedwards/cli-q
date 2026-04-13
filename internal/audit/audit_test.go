@@ -150,8 +150,8 @@ func TestBuildExternalDeps_Sorted(t *testing.T) {
 			Nodes: []api.IRNode{
 				{Type: "ExternalDependency", Name: "zlib"},
 				{Type: "ExternalDependency", Name: "axios"},
-				{Type: "Function", Name: "foo"}, // ignored
-				{Type: "ExternalDependency", Name: ""},  // empty name, ignored
+				{Type: "Function", Name: "foo"},        // ignored
+				{Type: "ExternalDependency", Name: ""}, // empty name, ignored
 			},
 		},
 	}
@@ -385,7 +385,7 @@ func TestBuildCouplingMaps_EmptySourceTarget(t *testing.T) {
 	ir := &api.SupermodelIR{
 		Graph: api.IRGraph{
 			Relationships: []api.IRRelationship{
-				{Type: "DOMAIN_RELATES", Source: "", Target: "DB"}, // empty source, ignored
+				{Type: "DOMAIN_RELATES", Source: "", Target: "DB"},   // empty source, ignored
 				{Type: "DOMAIN_RELATES", Source: "Auth", Target: ""}, // empty target, ignored
 			},
 		},

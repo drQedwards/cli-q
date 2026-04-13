@@ -162,9 +162,9 @@ func TestExtractTerms_ArrayPath(t *testing.T) {
 	data := map[string]interface{}{
 		"ingredients": []interface{}{
 			map[string]interface{}{"searchTerm": "flour"},
-			map[string]interface{}{"searchTerm": ""},      // empty term skipped
-			map[string]interface{}{"other": "no term"},    // missing field skipped
-			"not a map",                                   // non-map skipped
+			map[string]interface{}{"searchTerm": ""},   // empty term skipped
+			map[string]interface{}{"other": "no term"}, // missing field skipped
+			"not a map", // non-map skipped
 		},
 	}
 	terms := extractTerms(data, "ingredients[].searchTerm")

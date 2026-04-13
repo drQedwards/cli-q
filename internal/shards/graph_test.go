@@ -43,9 +43,9 @@ func TestIsShardPath(t *testing.T) {
 		{"lib/foo.graph.js", true},
 		{"src/handler.go", false},
 		{"src/handler.ts", false},
-		{"graph.go", false},         // no double extension
-		{"src/a.b.graph.go", true},  // any double extension with .graph
-		{"src/file.graph", false},   // .graph alone is not a source ext
+		{"graph.go", false},        // no double extension
+		{"src/a.b.graph.go", true}, // any double extension with .graph
+		{"src/file.graph", false},  // .graph alone is not a source ext
 	}
 	for _, tc := range cases {
 		if got := isShardPath(tc.path); got != tc.want {
@@ -534,13 +534,13 @@ func TestBuild_BelongsToFnWithFileKey(t *testing.T) {
 	// but FnByID["fn1"].File is populated → the fallback `if fn, ok := c.FnByID[...]`
 	// branch (L182) is reached.
 	domainNode := api.Node{
-		ID:     "dom1",
-		Labels: []string{"Domain"},
+		ID:         "dom1",
+		Labels:     []string{"Domain"},
 		Properties: map[string]any{"name": "Core"},
 	}
 	fnWithFileKey := api.Node{
-		ID:     "fn1",
-		Labels: []string{"Function"},
+		ID:         "fn1",
+		Labels:     []string{"Function"},
 		Properties: map[string]any{"name": "doWork", "file": "src/core.go"},
 	}
 	c := buildCache(

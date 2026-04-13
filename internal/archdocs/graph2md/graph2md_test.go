@@ -880,8 +880,8 @@ func TestRunFunctionBodyWithDomainAndSubdomain(t *testing.T) {
 		{ID: "domain:auth", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "auth"}},
 		{ID: "subdomain:login", Labels: []string{"Subdomain"}, Properties: map[string]interface{}{"name": "login"}},
 		{
-			ID:     "file:src/login.go",
-			Labels: []string{"File"},
+			ID:         "file:src/login.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/login.go"},
 		},
 		{
@@ -940,8 +940,8 @@ func TestRunTypeBodyWithDomainSubdomainAndSource(t *testing.T) {
 		{ID: "domain:core", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "core"}},
 		{ID: "subdomain:types", Labels: []string{"Subdomain"}, Properties: map[string]interface{}{"name": "types"}},
 		{
-			ID:     "file:src/types.go",
-			Labels: []string{"File"},
+			ID:         "file:src/types.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/types.go"},
 		},
 		{
@@ -998,8 +998,8 @@ func TestRunClassBodyWithDomainAndSubdomain(t *testing.T) {
 		{ID: "domain:models", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "models"}},
 		{ID: "subdomain:entities", Labels: []string{"Subdomain"}, Properties: map[string]interface{}{"name": "entities"}},
 		{
-			ID:     "class:src/user.go:User",
-			Labels: []string{"Class"},
+			ID:         "class:src/user.go:User",
+			Labels:     []string{"Class"},
 			Properties: map[string]interface{}{"name": "User", "filePath": "src/user.go"},
 		},
 	}
@@ -1044,13 +1044,13 @@ func TestRunSubdomainWithClassesAndFiles(t *testing.T) {
 		{ID: "domain:core", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "core"}},
 		{ID: "subdomain:models", Labels: []string{"Subdomain"}, Properties: map[string]interface{}{"name": "models"}},
 		{
-			ID:     "class:src/models.go:User",
-			Labels: []string{"Class"},
+			ID:         "class:src/models.go:User",
+			Labels:     []string{"Class"},
 			Properties: map[string]interface{}{"name": "User", "filePath": "src/models.go"},
 		},
 		{
-			ID:     "file:src/models.go",
-			Labels: []string{"File"},
+			ID:         "file:src/models.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/models.go"},
 		},
 	}
@@ -1285,15 +1285,15 @@ func TestResolveNameWithPathBranches(t *testing.T) {
 	nodes := []Node{
 		// Center file: will show "Imported By" section → resolveNameWithPath called on importers
 		{
-			ID:     "file:center.go",
-			Labels: []string{"File"},
+			ID:         "file:center.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "center.go"},
 		},
 		// Name-only file: no path/filePath, only name — slug="" so no output file but in nodeLookup.
 		// resolveNameWithPath(id) → returns "helper.go" (name-only branch).
 		{
-			ID:     "file:name-only",
-			Labels: []string{"File"},
+			ID:         "file:name-only",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"name": "helper.go"},
 		},
 		// Empty-props file: neither path nor name → resolveNameWithPath returns nodeID.
@@ -1305,8 +1305,8 @@ func TestResolveNameWithPathBranches(t *testing.T) {
 		// Function whose "Defined In" file doesn't exist in nodeLookup.
 		// fileOfFunc["fn:ghost"] = "file:ghost-file" (not in nodes) → resolveNameWithPath n==nil.
 		{
-			ID:     "fn:ghost",
-			Labels: []string{"Function"},
+			ID:         "fn:ghost",
+			Labels:     []string{"Function"},
 			Properties: map[string]interface{}{"name": "Ghost", "filePath": "ghost.go"},
 		},
 	}
@@ -1471,6 +1471,7 @@ func TestLoadGraph_ReadError(t *testing.T) {
 // TestDomainLinkNotFound covers:
 //   - domainLink: !ok branch (domain name not in domainNodeByName)
 //   - subdomainLink: !ok branch (subdomain name not in subdomainNodeByName)
+//
 // A Domain/Subdomain node with no "name" property won't be indexed in domainNodeByName,
 // so calling domainLink/subdomainLink with the empty name falls through to the !ok path.
 func TestDomainLinkNotFound(t *testing.T) {
@@ -1480,8 +1481,8 @@ func TestDomainLinkNotFound(t *testing.T) {
 		// Subdomain with no name → subdomainNodeByName won't have it
 		{ID: "subdomain:unnamed", Labels: []string{"Subdomain"}, Properties: map[string]interface{}{}},
 		{
-			ID:     "fn:src/foo.go:Foo",
-			Labels: []string{"Function"},
+			ID:         "fn:src/foo.go:Foo",
+			Labels:     []string{"Function"},
 			Properties: map[string]interface{}{"name": "Foo", "filePath": "src/foo.go"},
 		},
 	}
@@ -1623,8 +1624,8 @@ func TestRunSubdomainWithDescription(t *testing.T) {
 			},
 		},
 		{
-			ID:     "domain:core",
-			Labels: []string{"Domain"},
+			ID:         "domain:core",
+			Labels:     []string{"Domain"},
 			Properties: map[string]interface{}{"name": "core"},
 		},
 	}
@@ -1727,13 +1728,13 @@ func TestRunDirectoryNameDerivedFromPath(t *testing.T) {
 func TestRunClassMermaidWithMethods(t *testing.T) {
 	nodes := []Node{
 		{
-			ID:     "class:src/svc.go:Service",
-			Labels: []string{"Class"},
+			ID:         "class:src/svc.go:Service",
+			Labels:     []string{"Class"},
 			Properties: map[string]interface{}{"name": "Service", "filePath": "src/svc.go"},
 		},
 		{
-			ID:     "fn:src/svc.go:Run",
-			Labels: []string{"Function"},
+			ID:         "fn:src/svc.go:Run",
+			Labels:     []string{"Function"},
 			Properties: map[string]interface{}{"name": "Run", "filePath": "src/svc.go"},
 		},
 	}
@@ -2186,8 +2187,8 @@ func TestFileDomainFromDirectBelongsTo(t *testing.T) {
 	nodes := []Node{
 		{ID: "domain:auth", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "auth"}},
 		{
-			ID:     "file:src/auth.go",
-			Labels: []string{"File"},
+			ID:         "file:src/auth.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/auth.go"},
 		},
 	}
@@ -2224,13 +2225,13 @@ func TestFileDomainFromClassBelongsTo(t *testing.T) {
 	nodes := []Node{
 		{ID: "domain:core", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "core"}},
 		{
-			ID:     "file:src/core.go",
-			Labels: []string{"File"},
+			ID:         "file:src/core.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/core.go"},
 		},
 		{
-			ID:     "class:src/core.go:Service",
-			Labels: []string{"Class"},
+			ID:         "class:src/core.go:Service",
+			Labels:     []string{"Class"},
 			Properties: map[string]interface{}{"name": "Service", "filePath": "src/core.go"},
 		},
 	}
@@ -2267,18 +2268,18 @@ func TestFileDomainFromClassMethodBelongsTo(t *testing.T) {
 	nodes := []Node{
 		{ID: "domain:api", Labels: []string{"Domain"}, Properties: map[string]interface{}{"name": "api"}},
 		{
-			ID:     "file:src/api.go",
-			Labels: []string{"File"},
+			ID:         "file:src/api.go",
+			Labels:     []string{"File"},
 			Properties: map[string]interface{}{"path": "src/api.go"},
 		},
 		{
-			ID:     "class:src/api.go:Handler",
-			Labels: []string{"Class"},
+			ID:         "class:src/api.go:Handler",
+			Labels:     []string{"Class"},
 			Properties: map[string]interface{}{"name": "Handler", "filePath": "src/api.go"},
 		},
 		{
-			ID:     "fn:src/api.go:Handle",
-			Labels: []string{"Function"},
+			ID:         "fn:src/api.go:Handle",
+			Labels:     []string{"Function"},
 			Properties: map[string]interface{}{"name": "Handle", "filePath": "src/api.go"},
 		},
 	}

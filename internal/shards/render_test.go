@@ -366,8 +366,8 @@ func TestRenderImpactSection_MediumRisk(t *testing.T) {
 		id := fmt.Sprintf("f%d", i)
 		path := fmt.Sprintf("src/file%d.go", i)
 		nodes = append(nodes, api.Node{
-			ID:     id,
-			Labels: []string{"File"},
+			ID:         id,
+			Labels:     []string{"File"},
 			Properties: map[string]any{"filePath": path},
 		})
 		rels = append(rels, api.Relationship{
@@ -541,7 +541,7 @@ func TestUpdateGitignore_ExistingEntrySkipped(t *testing.T) {
 	dir := t.TempDir()
 	// Pre-populate with the entry
 	os.WriteFile(dir+"/.gitignore", []byte(".supermodel/\n"), 0o600) //nolint:errcheck
-	updateGitignore(dir)                                               //nolint:errcheck
+	updateGitignore(dir)                                             //nolint:errcheck
 	data, _ := os.ReadFile(dir + "/.gitignore")
 	if strings.Count(string(data), ".supermodel/") != 1 {
 		t.Errorf("should not add duplicate: %s", data)
@@ -581,7 +581,7 @@ func TestUpdateGitignore_NoTrailingNewlineHandled(t *testing.T) {
 	dir := t.TempDir()
 	// Write without trailing newline
 	os.WriteFile(dir+"/.gitignore", []byte("node_modules"), 0o600) //nolint:errcheck
-	updateGitignore(dir)                                             //nolint:errcheck
+	updateGitignore(dir)                                           //nolint:errcheck
 	data, _ := os.ReadFile(dir + "/.gitignore")
 	if !strings.Contains(string(data), ".supermodel/") {
 		t.Errorf("missing .supermodel/: %s", data)

@@ -403,8 +403,8 @@ func TestCallTool_GetGraphCase(t *testing.T) {
 // getOrAnalyze returns immediately without needing an API key.
 func newServerWithGraph() *server {
 	return &server{
-		cfg:  &config.Config{},
-		dir:  "/tmp/test-repo",
+		cfg: &config.Config{},
+		dir: "/tmp/test-repo",
 		graph: &api.Graph{
 			Metadata: map[string]any{"repoId": "test-repo-123"},
 			Nodes: []api.Node{

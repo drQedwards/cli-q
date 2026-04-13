@@ -838,4 +838,3 @@ func TestCreateZipFile_CreateTempError(t *testing.T) {
 		t.Error("expected error when os.CreateTemp fails due to invalid TMPDIR")
 	}
 }
-

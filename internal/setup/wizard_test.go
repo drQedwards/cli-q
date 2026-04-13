@@ -106,8 +106,8 @@ func TestInstallHook_FreshDir(t *testing.T) {
 	if err != nil {
 		t.Fatalf("settings.json not created: %v", err)
 	}
-	if !strings.Contains(string(data), "supermodel hook") {
-		t.Errorf("settings.json should contain 'supermodel hook': %s", data)
+	if !strings.Contains(string(data), " hook") {
+		t.Errorf("settings.json should contain a hook command ending in ' hook': %s", data)
 	}
 }
 

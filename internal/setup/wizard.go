@@ -282,7 +282,7 @@ func installHook(repoDir string) (bool, error) {
 					if innerHooks, ok := m["hooks"].([]interface{}); ok {
 						for _, h := range innerHooks {
 							if hm, ok := h.(map[string]interface{}); ok {
-								if cmd, ok := hm["command"].(string); ok && strings.Contains(cmd, "supermodel hook") {
+								if cmd, ok := hm["command"].(string); ok && strings.HasSuffix(cmd, " hook") {
 									return false, nil // already installed
 								}
 							}
