@@ -36,7 +36,7 @@ func Run(ctx context.Context, cfg *config.Config, dir string, opts Options) erro
 //
 // Uses git-based fingerprinting (~1ms for clean repos) to check the cache
 // before creating a zip. Only creates and uploads the zip on cache miss.
-func GetGraph(ctx context.Context, cfg *config.Config, dir string, force bool) (*api.Graph, string, error) {
+func GetGraph(ctx context.Context, cfg *config.Config, dir string, force bool) (*api.Graph, string, error) { //nolint:gocyclo // orchestration: multiple cache checks, fallback paths, and error branches are inherently complex
 	if err := guardDir(dir); err != nil {
 		return nil, "", err
 	}

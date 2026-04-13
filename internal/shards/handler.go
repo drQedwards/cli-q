@@ -75,7 +75,7 @@ func guardDir(dir string) error {
 }
 
 // Generate uploads a zip, builds the graph cache, and renders all shards.
-func Generate(ctx context.Context, cfg *config.Config, dir string, opts GenerateOptions) error {
+func Generate(ctx context.Context, cfg *config.Config, dir string, opts GenerateOptions) error { //nolint:gocyclo // orchestration: cache checks, API fallback, and cache write paths are inherently complex
 	repoDir, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("resolving path: %w", err)

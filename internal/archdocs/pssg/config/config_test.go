@@ -189,14 +189,15 @@ func TestResolvePaths_RelativePaths(t *testing.T) {
 }
 
 func TestResolvePaths_AbsPathPreserved(t *testing.T) {
-	absData := filepath.Join(string(filepath.Separator), "absolute", "data")
+	tmp := t.TempDir()
+	absData := filepath.Join(tmp, "absolute", "data")
 	cfg := &Config{
-		ConfigDir: filepath.Join(string(filepath.Separator), "base"),
+		ConfigDir: filepath.Join(tmp, "base"),
 		Paths: PathsConfig{
 			Data:      absData,
-			Templates: filepath.Join(string(filepath.Separator), "absolute", "templates"),
-			Output:    filepath.Join(string(filepath.Separator), "absolute", "docs"),
-			Cache:     filepath.Join(string(filepath.Separator), "absolute", ".cache"),
+			Templates: filepath.Join(tmp, "absolute", "templates"),
+			Output:    filepath.Join(tmp, "absolute", "docs"),
+			Cache:     filepath.Join(tmp, "absolute", ".cache"),
 		},
 	}
 	resolvePaths(cfg)

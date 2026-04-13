@@ -100,7 +100,7 @@ func Run() (updated bool, err error) {
 // fetchRelease retrieves the latest GitHub release metadata.
 func fetchRelease() (*Release, error) {
 	client := &http.Client{Timeout: 15 * time.Second}
-	req, _ := http.NewRequest(http.MethodGet, releaseAPI, nil)
+	req, _ := http.NewRequest(http.MethodGet, releaseAPI, http.NoBody)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
 
@@ -134,7 +134,7 @@ func assetFilename() string {
 // temp file, and returns its path.
 func downloadBinary(url, assetName string) (string, error) {
 	client := &http.Client{Timeout: 5 * time.Minute}
-	resp, err := client.Get(url) //nolint:noctx
+	resp, err := client.Get(url) //nolint:noctx // download is a long-running transfer; no per-request context available
 	if err != nil {
 		return "", err
 	}
@@ -198,7 +198,7 @@ func extractTarGz(r io.Reader, dest string) error {
 		if err != nil {
 			return err
 		}
-		_, err = io.Copy(out, tr) //nolint:gosec
+		_, err = io.Copy(out, tr)
 		out.Close()
 		return err
 	}
@@ -226,7 +226,7 @@ func extractZip(archivePath, dest string) error {
 			rc.Close()
 			return err
 		}
-		_, err = io.Copy(out, rc) //nolint:gosec
+		_, err = io.Copy(out, rc)
 		rc.Close()
 		out.Close()
 		return err

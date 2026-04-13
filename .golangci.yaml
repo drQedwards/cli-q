@@ -43,6 +43,8 @@ linters:
         - G301 # directory permissions 0755 — intentional for static site output
         - G306 # file write permissions 0644 — intentional for static site output
         - G703 # path traversal — output paths come from user-supplied CLI flags
+        - G302 # executable file permissions 0755 — intentional for installed binaries
+        - G110 # decompression bomb — archives are from our own release downloads
   exclusions:
     rules:
       # Deferred and best-effort closes are idiomatic Go — errors not actionable.
