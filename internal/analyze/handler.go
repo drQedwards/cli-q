@@ -37,6 +37,10 @@ func Run(ctx context.Context, cfg *config.Config, dir string, opts Options) erro
 // Uses git-based fingerprinting (~1ms for clean repos) to check the cache
 // before creating a zip. Only creates and uploads the zip on cache miss.
 func GetGraph(ctx context.Context, cfg *config.Config, dir string, force bool) (*api.Graph, string, error) {
+	if err := guardDir(dir); err != nil {
+		return nil, "", err
+	}
+
 	// Fast path: check cache using git fingerprint before creating zip.
 	if !force {
 		fingerprint, err := cache.RepoFingerprint(dir)
@@ -58,6 +62,13 @@ func GetGraph(ctx context.Context, cfg *config.Config, dir string, force bool) (
 	}
 	defer os.Remove(zipPath)
 
+	if info, statErr := os.Stat(zipPath); statErr == nil {
+		sizeMB := float64(info.Size()) / (1 << 20)
+		if sizeMB > 50 {
+			ui.Warn("Archive is %.0f MB — add patterns to .supermodel.json to reduce upload size", sizeMB)
+		}
+	}
+
 	hash, err := cache.HashFile(zipPath)
 	if err != nil {
 		return nil, "", err
@@ -76,6 +87,18 @@ func GetGraph(ctx context.Context, cfg *config.Config, dir string, force bool) (
 	ir, err := client.AnalyzeShards(ctx, zipPath, "analyze-"+hash[:16], nil)
 	spin.Stop()
 	if err != nil {
+		// Network/API failure — serve stale cache if available rather than hard-failing.
+		if stale, _ := cache.Get(hash); stale != nil {
+			ui.Warn("API unavailable (%v) — using stale cached result", err)
+			return stale, hash, nil
+		}
+		if fp, fpErr := cache.RepoFingerprint(dir); fpErr == nil {
+			fpKey := cache.AnalysisKey(fp, "graph", build.Version)
+			if stale, _ := cache.Get(fpKey); stale != nil {
+				ui.Warn("API unavailable (%v) — using stale cached result", err)
+				return stale, fpKey, nil
+			}
+		}
 		return nil, hash, err
 	}
 

@@ -24,7 +24,10 @@ func dir() string {
 	return filepath.Join(config.Dir(), "cache")
 }
 
-// Get loads a cached graph for hash. Returns (nil, nil) on cache miss.
+// DefaultTTL is how long cached entries are considered fresh.
+const DefaultTTL = 30 * 24 * time.Hour
+
+// Get loads a cached graph for hash. Returns (nil, nil) on cache miss or expiry.
 func Get(hash string) (*api.Graph, error) {
 	data, err := os.ReadFile(filepath.Join(dir(), hash+".json"))
 	if os.IsNotExist(err) {
@@ -37,7 +40,81 @@ func Get(hash string) (*api.Graph, error) {
 	if err := json.Unmarshal(data, &e); err != nil {
 		return nil, fmt.Errorf("parse cache: %w", err)
 	}
+	if !e.CachedAt.IsZero() && time.Since(e.CachedAt) > DefaultTTL {
+		_ = Evict(hash) // stale — evict silently
+		return nil, nil
+	}
 	return e.Graph, nil
+}
+
+// Prune removes cache entries older than maxAge. Returns the number removed.
+func Prune(maxAge time.Duration) (int, error) {
+	entries, err := os.ReadDir(dir())
+	if os.IsNotExist(err) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, fmt.Errorf("read cache dir: %w", err)
+	}
+	removed := 0
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if time.Since(info.ModTime()) > maxAge {
+			if rmErr := os.Remove(filepath.Join(dir(), e.Name())); rmErr == nil {
+				removed++
+			}
+		}
+	}
+	return removed, nil
+}
+
+// Stats returns aggregate cache metrics: entry count and total size in bytes.
+func Stats() (count int, sizeBytes int64) {
+	entries, err := os.ReadDir(dir())
+	if err != nil {
+		return 0, 0
+	}
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		count++
+		sizeBytes += info.Size()
+	}
+	return count, sizeBytes
+}
+
+// NewestEntry returns the modification time of the most recently written cache
+// entry, or the zero time if the cache is empty.
+func NewestEntry() time.Time {
+	entries, err := os.ReadDir(dir())
+	if err != nil {
+		return time.Time{}
+	}
+	var newest time.Time
+	for _, e := range entries {
+		if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().After(newest) {
+			newest = info.ModTime()
+		}
+	}
+	return newest
 }
 
 // Put stores g in the cache under hash.

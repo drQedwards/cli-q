@@ -50,10 +50,19 @@ const maxFileSize = 500 * 1024 // 500KB
 type zipExclusions struct {
 	skipDirs map[string]bool
 	skipExts map[string]bool
+	patterns []string // glob patterns matched against the slash-relative path
 }
 
 // buildExclusions merges the base skip lists with any custom entries read
 // from .supermodel.json in repoDir and returns a per-call copy.
+//
+// .supermodel.json format:
+//
+//	{
+//	  "exclude_dirs": ["generated", "fixtures"],
+//	  "exclude_exts": [".pb.go", ".generated.ts"],
+//	  "exclude_patterns": ["**/testdata/**", "docs/api/**"]
+//	}
 func buildExclusions(repoDir string) *zipExclusions {
 	ex := &zipExclusions{
 		skipDirs: make(map[string]bool, len(zipSkipDirs)+4),
@@ -75,8 +84,9 @@ func buildExclusions(repoDir string) *zipExclusions {
 		return ex
 	}
 	var cfg struct {
-		ExcludeDirs []string `json:"exclude_dirs"`
-		ExcludeExts []string `json:"exclude_exts"`
+		ExcludeDirs     []string `json:"exclude_dirs"`
+		ExcludeExts     []string `json:"exclude_exts"`
+		ExcludePatterns []string `json:"exclude_patterns"`
 	}
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "warning: failed to parse %s: %v — custom exclusions will be ignored\n",
@@ -89,7 +99,45 @@ func buildExclusions(repoDir string) *zipExclusions {
 	for _, e := range cfg.ExcludeExts {
 		ex.skipExts[e] = true
 	}
+	ex.patterns = cfg.ExcludePatterns
 	return ex
+}
+
+// matchesPattern reports whether the slash-relative path matches any of the
+// user-supplied glob patterns. Supports ** as a multi-segment wildcard.
+func matchesPattern(relSlash string, patterns []string) bool {
+	for _, pat := range patterns {
+		pat = filepath.ToSlash(pat)
+		// Try direct match
+		if ok, _ := matchGlob(pat, relSlash); ok {
+			return true
+		}
+		// Also match against just the filename component
+		if ok, _ := matchGlob(pat, filepath.Base(relSlash)); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// matchGlob extends filepath.Match with ** support.
+func matchGlob(pattern, name string) (bool, error) {
+	if !strings.Contains(pattern, "**") {
+		return filepath.Match(pattern, name)
+	}
+	// Replace ** with a sentinel, split on /, handle each segment
+	// Simple approach: match the suffix/prefix around **
+	parts := strings.SplitN(pattern, "**", 2)
+	prefix, suffix := parts[0], parts[1]
+	suffix = strings.TrimPrefix(suffix, "/")
+	prefix = strings.TrimSuffix(prefix, "/")
+	if prefix != "" && !strings.HasPrefix(name, prefix+"/") && name != prefix {
+		return false, nil
+	}
+	if suffix == "" {
+		return true, nil
+	}
+	return filepath.Match(suffix, filepath.Base(name))
 }
 
 // matchPattern does simple glob matching (*, ?).
@@ -128,7 +176,13 @@ func matchPattern(pattern, name string) bool {
 }
 
 func shouldInclude(relPath string, fileSize int64, ex *zipExclusions) bool {
-	parts := strings.Split(filepath.ToSlash(relPath), "/")
+	slashRel := filepath.ToSlash(relPath)
+	parts := strings.Split(slashRel, "/")
+
+	// User-defined glob patterns take precedence
+	if len(ex.patterns) > 0 && matchesPattern(slashRel, ex.patterns) {
+		return false
+	}
 
 	for _, part := range parts[:len(parts)-1] {
 		if ex.skipDirs[part] || hardBlocked[part] {

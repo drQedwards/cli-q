@@ -56,11 +56,32 @@ type RenderOptions struct {
 	ThreeFile bool
 }
 
+// guardDir returns an error if dir is the filesystem root or the user's home
+// directory — running analysis there would upload far too much.
+func guardDir(dir string) error {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+	vol := filepath.VolumeName(abs)
+	if abs == vol+string(filepath.Separator) || abs == string(filepath.Separator) {
+		return fmt.Errorf("refusing to run in root directory — specify a project directory with --dir")
+	}
+	home, _ := os.UserHomeDir()
+	if home != "" && abs == home {
+		return fmt.Errorf("refusing to run in home directory (%s) — specify a project directory with --dir", abs)
+	}
+	return nil
+}
+
 // Generate uploads a zip, builds the graph cache, and renders all shards.
 func Generate(ctx context.Context, cfg *config.Config, dir string, opts GenerateOptions) error {
 	repoDir, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("resolving path: %w", err)
+	}
+	if err := guardDir(repoDir); err != nil {
+		return err
 	}
 
 	cacheFile := opts.CacheFile
@@ -102,6 +123,13 @@ func Generate(ctx context.Context, cfg *config.Config, dir string, opts Generate
 	}
 	defer os.Remove(zipPath)
 
+	if info, statErr := os.Stat(zipPath); statErr == nil {
+		sizeMB := float64(info.Size()) / (1 << 20)
+		if sizeMB > 50 {
+			ui.Warn("Archive is %.0f MB — add exclude_dirs or exclude_patterns to .supermodel.json to reduce upload size", sizeMB)
+		}
+	}
+
 	// Read previous domains from cache for LLM seeding (stabilizes names across refreshes)
 	var prevDomains []api.PreviousDomain
 	if data, readErr := os.ReadFile(cacheFile); readErr == nil {
@@ -123,6 +151,22 @@ func Generate(ctx context.Context, cfg *config.Config, dir string, opts Generate
 	ir, err := client.AnalyzeShards(ctx, zipPath, "shards-"+idemKey[:8], prevDomains)
 	spin.Stop()
 	if err != nil {
+		// Network/API failure — fall back to stale cache and re-render rather than hard-failing.
+		if data, readErr := os.ReadFile(cacheFile); readErr == nil {
+			var staleIR api.ShardIR
+			if json.Unmarshal(data, &staleIR) == nil && len(staleIR.Graph.Nodes) > 0 {
+				ui.Warn("API unavailable (%v) — rendering from stale cache", err)
+				staleCache := NewCache()
+				staleCache.Build(&staleIR)
+				files := staleCache.SourceFiles()
+				written, renderErr := renderShards(repoDir, staleCache, files, opts.DryRun, opts.ThreeFile)
+				if renderErr != nil {
+					return fmt.Errorf("API error: %w; stale render also failed: %v", err, renderErr)
+				}
+				ui.Success("Wrote %d shards from stale cache (%d nodes)", written, len(staleIR.Graph.Nodes))
+				return nil
+			}
+		}
 		return err
 	}
 
@@ -165,6 +209,9 @@ func Watch(ctx context.Context, cfg *config.Config, dir string, opts WatchOption
 	repoDir, err := filepath.Abs(dir)
 	if err != nil {
 		return fmt.Errorf("resolving path: %w", err)
+	}
+	if err := guardDir(repoDir); err != nil {
+		return err
 	}
 
 	cacheFile := opts.CacheFile
