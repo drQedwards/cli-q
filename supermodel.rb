@@ -5,21 +5,21 @@
 class Supermodel < Formula
   desc "Give your AI coding agent a map of your codebase"
   homepage "https://supermodeltools.com"
-  version "0.5.0"
+  version "0.5.1"
   license "MIT"
 
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/supermodeltools/cli/releases/download/v0.5.0/supermodel_darwin_amd64.tar.gz"
-      sha256 "66fdda57b624257475ac21537d30f72424a3fa0ab025b5f8648b6180545650a3"
+      url "https://github.com/supermodeltools/cli/releases/download/v0.5.1/supermodel_darwin_amd64.tar.gz"
+      sha256 "ca9e82cb31d110917597f0fe3941acb71f6b4313c2e300c1cbb1e5b788362fef"
 
       define_method(:install) do
         bin.install "supermodel"
       end
     end
     if Hardware::CPU.arm?
-      url "https://github.com/supermodeltools/cli/releases/download/v0.5.0/supermodel_darwin_arm64.tar.gz"
-      sha256 "229be8990ce1c17c593fb9e493e2c43531c461dd5ae8f9ec243360998ef348a7"
+      url "https://github.com/supermodeltools/cli/releases/download/v0.5.1/supermodel_darwin_arm64.tar.gz"
+      sha256 "c7bc561155987fb350c37b3829f2356ca66d090e7495abf9a6cc2dfe7fdde1a6"
 
       define_method(:install) do
         bin.install "supermodel"
@@ -29,15 +29,15 @@ class Supermodel < Formula
 
   on_linux do
     if Hardware::CPU.intel? && Hardware::CPU.is_64_bit?
-      url "https://github.com/supermodeltools/cli/releases/download/v0.5.0/supermodel_linux_amd64.tar.gz"
-      sha256 "06890e4a4def6aa31679f72fb50529faed12da40c970415be969fde769ccf137"
+      url "https://github.com/supermodeltools/cli/releases/download/v0.5.1/supermodel_linux_amd64.tar.gz"
+      sha256 "d270c4860f3716c314fda7cd2ea3e1224f2ab6e0d930f63d2b0ce781b57cfd3f"
       define_method(:install) do
         bin.install "supermodel"
       end
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/supermodeltools/cli/releases/download/v0.5.0/supermodel_linux_arm64.tar.gz"
-      sha256 "a582dd17ca3098dbea3a2791f0c3474dc21e365bbac07caca60bacdb9e884be8"
+      url "https://github.com/supermodeltools/cli/releases/download/v0.5.1/supermodel_linux_arm64.tar.gz"
+      sha256 "534d2e9bd0a1512fbb351798d57b6152ab0d719d698ccf486b16f6e82040ee1c"
       define_method(:install) do
         bin.install "supermodel"
       end
