@@ -1,6 +1,6 @@
 # Supermodel CLI
 
-Your AI agent knows your entire codebase — not just the files it's looking at.
+Save up to 40% on agent token costs with code graphs.
 
 Supermodel maps every file, function, and call relationship in your repo and writes a `.graph` file next to each source file. Your agent reads them automatically via grep and cat. No prompt changes. No extra context windows. No new tools to learn.
 
