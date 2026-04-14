@@ -149,4 +149,4 @@ Run the analysis once. Save on every task after.
 
 ---
 
-*Benchmark: identical Docker containers, claude-sonnet-4-6, same task, isolated runs.*
+*Benchmark: identical Docker containers, claude-opus-4-6, same task, isolated runs.*
