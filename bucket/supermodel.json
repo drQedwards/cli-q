@@ -1,12 +1,12 @@
 {
-    "version": "0.6.6",
+    "version": "0.6.7",
     "architecture": {
         "64bit": {
-            "url": "https://github.com/supermodeltools/cli/releases/download/v0.6.6/supermodel_windows_amd64.zip",
+            "url": "https://github.com/supermodeltools/cli/releases/download/v0.6.7/supermodel_windows_amd64.zip",
             "bin": [
                 "supermodel.exe"
             ],
-            "hash": "32659e8ec549fbb5f2de6f445ca94eeb2a766334d689a2ab660f81f9f672cf51"
+            "hash": "fc494f781cab00ba0974fe6007118aa937cddbcc672987a798db33187668a80a"
         }
     },
     "homepage": "https://supermodeltools.com",
