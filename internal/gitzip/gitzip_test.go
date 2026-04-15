@@ -257,6 +257,98 @@ func TestCreateZip_DirtyGitRepo(t *testing.T) {
 	}
 }
 
+// TestGitLsFilesZip_SkipsLargeFiles verifies that files over 10 MB are excluded
+// even when enumerated via git ls-files (dirty git repo path).
+func TestGitLsFilesZip_SkipsLargeFiles(t *testing.T) {
+	dir := initCleanGitRepo(t)
+
+	big := filepath.Join(dir, "huge.dat")
+	if err := os.WriteFile(big, make([]byte, 10<<20+1), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "small.go"), []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Make worktree dirty so git ls-files path is taken.
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main // dirty"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	path, err := CreateZip(dir, "supermodel-*.zip")
+	if err != nil {
+		t.Fatalf("CreateZip: %v", err)
+	}
+	defer os.Remove(path)
+
+	entries := readZipEntries(t, path)
+	if entries["huge.dat"] {
+		t.Error("file over 10 MB should be excluded from zip via git ls-files path")
+	}
+	if !entries["small.go"] {
+		t.Error("small untracked file should be included")
+	}
+}
+
+// TestGitLsFilesZip_SkipsSymlinks verifies that symlinks are not followed
+// on the dirty git repo path.
+func TestGitLsFilesZip_SkipsSymlinks(t *testing.T) {
+	if os.Getenv("CI") != "" && os.Getenv("RUNNER_OS") == "Windows" {
+		t.Skip("symlinks not reliable on Windows CI")
+	}
+	dir := initCleanGitRepo(t)
+
+	// Create a symlink pointing outside the repo.
+	target := filepath.Join(t.TempDir(), "outside.txt")
+	if err := os.WriteFile(target, []byte("outside"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(dir, "link.txt")); err != nil {
+		t.Skip("symlink creation not supported:", err)
+	}
+	// Make worktree dirty.
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main // dirty"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	path, err := CreateZip(dir, "supermodel-*.zip")
+	if err != nil {
+		t.Fatalf("CreateZip: %v", err)
+	}
+	defer os.Remove(path)
+
+	entries := readZipEntries(t, path)
+	if entries["link.txt"] {
+		t.Error("symlink should be excluded from zip")
+	}
+}
+
+// TestCreateZip_IsGitRepo verifies that an actual git repo is detected.
+func TestCreateZip_IsGitRepo(t *testing.T) {
+	dir := initCleanGitRepo(t)
+	if !isGitRepo(dir) {
+		t.Error("initialized git repo should be detected as a git repo")
+	}
+}
+
+// TestGitLsFilesZip_FallsBackToWalkOnGitFailure verifies that CreateZip
+// falls back to walkZip when git ls-files fails (e.g. git not in PATH).
+func TestGitLsFilesZip_FallsBackToWalkOnGitFailure(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	// Non-git dir forces the walkZip path regardless.
+	path, err := CreateZip(dir, "supermodel-*.zip")
+	if err != nil {
+		t.Fatalf("CreateZip should succeed via walkZip fallback: %v", err)
+	}
+	defer os.Remove(path)
+	entries := readZipEntries(t, path)
+	if !entries["main.go"] {
+		t.Error("fallback walkZip should include main.go")
+	}
+}
+
 func readZipEntries(t *testing.T, path string) map[string]bool {
 	t.Helper()
 	r, err := zip.OpenReader(path)
