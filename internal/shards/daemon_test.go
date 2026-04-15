@@ -1,6 +1,7 @@
 package shards
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -861,4 +862,104 @@ func TestNewUUID_Version4Bits(t *testing.T) {
 	if parts[2][0] != '4' {
 		t.Errorf("expected version nibble '4' at start of 3rd group, got %q", parts[2][0])
 	}
+}
+
+// ── OnSyncing callback ────────────────────────────────────────────────────────
+
+// mockAnalyzeClient is a minimal analyzeClient that returns a fixed ShardIR.
+type mockAnalyzeClient struct {
+	result *api.ShardIR
+	err    error
+	called int
+}
+
+func (m *mockAnalyzeClient) AnalyzeShards(_ context.Context, _, _ string, _ []api.PreviousDomain) (*api.ShardIR, error) {
+	m.called++
+	return m.result, m.err
+}
+
+// orderClient records the call order of OnSyncing vs AnalyzeShards.
+type orderClient struct {
+	inner   analyzeClient
+	onCall  func()
+}
+
+func (o *orderClient) AnalyzeShards(ctx context.Context, zipPath, key string, prev []api.PreviousDomain) (*api.ShardIR, error) {
+	if o.onCall != nil {
+		o.onCall()
+	}
+	return o.inner.AnalyzeShards(ctx, zipPath, key, prev)
+}
+
+func TestOnSyncing_CalledWithCorrectFileCount(t *testing.T) {
+	var gotN int
+	d := &Daemon{
+		cfg: DaemonConfig{
+			RepoDir: t.TempDir(),
+			OnSyncing: func(n int) {
+				gotN = n
+			},
+		},
+		client: &mockAnalyzeClient{result: buildIR(nil, nil)},
+		cache:  NewCache(),
+		ir:     buildIR(nil, nil),
+		logf:   func(string, ...interface{}) {},
+	}
+	d.incrementalUpdate(context.Background(), []string{"a.go", "b.go", "c.go"})
+	if gotN != 3 {
+		t.Errorf("OnSyncing got n=%d, want 3", gotN)
+	}
+}
+
+func TestOnSyncing_CalledBeforeAPIResponse(t *testing.T) {
+	seq := 0
+	syncingAt := 0
+	apiAt := 0
+
+	mock := &mockAnalyzeClient{result: buildIR(nil, nil)}
+	d := &Daemon{
+		cfg: DaemonConfig{
+			RepoDir: t.TempDir(),
+			OnSyncing: func(int) {
+				seq++
+				syncingAt = seq
+			},
+		},
+		client: &orderClient{
+			inner: mock,
+			onCall: func() {
+				seq++
+				apiAt = seq
+			},
+		},
+		cache: NewCache(),
+		ir:    buildIR(nil, nil),
+		logf:  func(string, ...interface{}) {},
+	}
+	d.incrementalUpdate(context.Background(), []string{"a.go"})
+
+	if syncingAt == 0 {
+		t.Fatal("OnSyncing was never called")
+	}
+	if apiAt == 0 {
+		t.Fatal("AnalyzeShards was never called")
+	}
+	if syncingAt >= apiAt {
+		t.Errorf("OnSyncing (seq %d) should fire before AnalyzeShards (seq %d)", syncingAt, apiAt)
+	}
+}
+
+func TestOnSyncing_NilSafe(t *testing.T) {
+	// OnSyncing=nil should not panic.
+	d := &Daemon{
+		cfg: DaemonConfig{
+			RepoDir:   t.TempDir(),
+			OnSyncing: nil,
+		},
+		client: &mockAnalyzeClient{result: buildIR(nil, nil)},
+		cache:  NewCache(),
+		ir:     buildIR(nil, nil),
+		logf:   func(string, ...interface{}) {},
+	}
+	d.incrementalUpdate(context.Background(), []string{"a.go"})
 }

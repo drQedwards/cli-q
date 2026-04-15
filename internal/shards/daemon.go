@@ -29,14 +29,22 @@ type DaemonConfig struct {
 	LogFunc      func(string, ...interface{})
 	// OnReady is called once after the initial generate completes.
 	OnReady func(GraphStats)
+	// OnSyncing is called when an incremental API call starts, before the
+	// response arrives. n is the number of changed files being processed.
+	OnSyncing func(n int)
 	// OnUpdate is called after each incremental update completes.
 	OnUpdate func(GraphStats)
+}
+
+// analyzeClient is the subset of api.Client used by the daemon.
+type analyzeClient interface {
+	AnalyzeShards(ctx context.Context, zipPath, idempotencyKey string, previousDomains []api.PreviousDomain) (*api.ShardIR, error)
 }
 
 // Daemon watches for file changes and keeps shards fresh.
 type Daemon struct {
 	cfg    DaemonConfig
-	client *api.Client
+	client analyzeClient
 	cache  *Cache
 	logf   func(string, ...interface{})
 
@@ -250,6 +258,10 @@ func (d *Daemon) incrementalUpdate(ctx context.Context, changedFiles []string) {
 		return
 	}
 	defer os.Remove(zipPath)
+
+	if d.cfg.OnSyncing != nil {
+		d.cfg.OnSyncing(len(changedFiles))
+	}
 
 	ir, err := d.client.AnalyzeShards(ctx, zipPath, "incremental-"+idemKey[:8], nil)
 	if err != nil {

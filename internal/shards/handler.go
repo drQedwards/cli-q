@@ -263,6 +263,16 @@ func Watch(ctx context.Context, cfg *config.Config, dir string, opts WatchOption
 			line += fmt.Sprintf("  %s(%s)%s\n\n", ansiDim, src, ansiReset)
 			fmt.Print(line)
 		},
+		OnSyncing: func(n int) {
+			noun := "file"
+			if n != 1 {
+				noun = "files"
+			}
+			fmt.Printf("  %s↻%s  Syncing %s%d %s%s...\n",
+				ansiDim, ansiReset,
+				ansiBold, n, noun, ansiReset,
+			)
+		},
 		OnUpdate: func(s GraphStats) {
 			fmt.Printf("  %s✓%s  Updated — %s%d files%s · %s%d functions%s · %s%d relationships%s\n",
 				ansiGreen, ansiReset,
