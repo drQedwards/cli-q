@@ -143,8 +143,28 @@ func save(rootDir string, g *graphData) error {
 	if err != nil {
 		return fmt.Errorf("memorygraph: marshal: %w", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".memory-graph-*.json.tmp")
+	if err != nil {
+		return fmt.Errorf("memorygraph: tempfile: %w", err)
+	}
+	tmpName := tmp.Name()
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
 		return fmt.Errorf("memorygraph: write: %w", err)
+	}
+	if err := tmp.Sync(); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return fmt.Errorf("memorygraph: fsync: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("memorygraph: close: %w", err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("memorygraph: rename: %w", err)
 	}
 	return nil
 }
