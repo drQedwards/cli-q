@@ -99,9 +99,6 @@ func PeekList(rootDir string) ([]NodePeek, error) {
 
 	nodeByID := indexNodes(g)
 
-	// Count in/out degree per node.
-	outDeg := make(map[string]int, len(g.Nodes))
-	inDeg := make(map[string]int, len(g.Nodes))
 	edgesOut := make(map[string][]EdgePeek, len(g.Nodes))
 	edgesIn := make(map[string][]EdgePeek, len(g.Nodes))
 
@@ -110,13 +107,11 @@ func PeekList(rootDir string) ([]NodePeek, error) {
 		edgesOut[e.Source] = append(edgesOut[e.Source], EdgePeek{
 			Edge: e, PeerID: e.Target, PeerLabel: peer.Label, PeerType: peer.Type,
 		})
-		outDeg[e.Source]++
 
 		peer = nodeByID[e.Source]
 		edgesIn[e.Target] = append(edgesIn[e.Target], EdgePeek{
 			Edge: e, PeerID: e.Source, PeerLabel: peer.Label, PeerType: peer.Type,
 		})
-		inDeg[e.Target]++
 	}
 
 	peeks := make([]NodePeek, 0, len(g.Nodes))
@@ -130,9 +125,6 @@ func PeekList(rootDir string) ([]NodePeek, error) {
 
 	// Sort by access count desc, then label asc for stable output.
 	sortNodePeeks(peeks)
-
-	_ = outDeg // retained for future filtering options
-	_ = inDeg
 
 	return peeks, nil
 }
