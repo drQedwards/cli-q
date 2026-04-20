@@ -2,7 +2,7 @@
 // Nodes represent typed knowledge units; edges are weighted, typed relations.
 // The graph is stored as a single JSON file under rootDir/.supermodel/memory-graph.json
 // and is safe for concurrent reads within a process (writes hold a mutex).
-package memorygraph
+package Memorygraph
 
 import (
 	"encoding/json"
