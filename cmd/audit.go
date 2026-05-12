@@ -154,7 +154,7 @@ func runImpactForAudit(ctx context.Context, cmd *cobra.Command, cfg *config.Conf
 
 	client := api.New(cfg)
 	fmt.Fprintln(cmd.ErrOrStderr(), "Running impact analysis…")
-	result, err := client.Impact(ctx, zipPath, "audit-impact-"+hash[:16], "", "")
+	result, err := client.Impact(ctx, zipPath, "audit-impact-"+hash[:16], "", "", false)
 	if err != nil {
 		return nil, err
 	}

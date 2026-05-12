@@ -267,11 +267,21 @@ type ImpactMetadata struct {
 
 // ImpactTarget is the impact analysis result for a single target.
 type ImpactTarget struct {
-	Target              ImpactTargetInfo     `json:"target"`
-	BlastRadius         BlastRadius          `json:"blastRadius"`
-	AffectedFunctions   []AffectedFunction   `json:"affectedFunctions"`
-	AffectedFiles       []AffectedFile       `json:"affectedFiles"`
-	EntryPointsAffected []AffectedEntryPoint `json:"entryPointsAffected"`
+	Target                ImpactTargetInfo     `json:"target"`
+	BlastRadius           BlastRadius          `json:"blastRadius"`
+	AffectedFunctions     []AffectedFunction   `json:"affectedFunctions"`
+	AffectedFiles         []AffectedFile       `json:"affectedFiles"`
+	EntryPointsAffected   []AffectedEntryPoint `json:"entryPointsAffected"`
+	ValidationFiles       []ValidationFile     `json:"validationFiles,omitempty"`
+	PrimaryValidationFiles []ValidationFile    `json:"primaryValidationFiles,omitempty"`
+}
+
+// ValidationFile is a ranked test or validation-context file for a target.
+type ValidationFile struct {
+	File       string   `json:"file"`
+	Score      float64  `json:"score"`
+	Confidence string   `json:"confidence"`
+	Reasons    []string `json:"reasons,omitempty"`
 }
 
 // ImpactTargetInfo identifies the file or function being analyzed.

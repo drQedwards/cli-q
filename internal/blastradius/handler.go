@@ -16,9 +16,10 @@ import (
 
 // Options configures the blast-radius command.
 type Options struct {
-	Force  bool   // bypass cache
-	Output string // "human" | "json"
-	Diff   string // path to a unified diff file (optional)
+	Force              bool   // bypass cache
+	Output             string // "human" | "json"
+	Diff               string // path to a unified diff file (optional)
+	IncludeValidationFiles bool // request ranked validation files from the API
 }
 
 // Run uploads the repo and runs impact analysis via the dedicated API endpoint.
@@ -32,6 +33,9 @@ func Run(ctx context.Context, cfg *config.Config, dir string, targets []string, 
 			analysisType := "impact"
 			if targetStr != "" {
 				analysisType += ":" + targetStr
+			}
+			if opts.IncludeValidationFiles {
+				analysisType += ":vf"
 			}
 			key := cache.AnalysisKey(fp, analysisType, build.Version)
 			var cached api.ImpactResult
@@ -59,10 +63,13 @@ func Run(ctx context.Context, cfg *config.Config, dir string, targets []string, 
 	if targetStr != "" {
 		idempotencyKey += "-" + targetStr
 	}
+	if opts.IncludeValidationFiles {
+		idempotencyKey += "-vf"
+	}
 
 	client := api.New(cfg)
 	spin = ui.Start("Analyzing impact…")
-	result, err := client.Impact(ctx, zipPath, idempotencyKey, targetStr, opts.Diff)
+	result, err := client.Impact(ctx, zipPath, idempotencyKey, targetStr, opts.Diff, opts.IncludeValidationFiles)
 	spin.Stop()
 	if err != nil {
 		return err
@@ -74,6 +81,9 @@ func Run(ctx context.Context, cfg *config.Config, dir string, targets []string, 
 			analysisType := "impact"
 			if targetStr != "" {
 				analysisType += ":" + targetStr
+			}
+			if opts.IncludeValidationFiles {
+				analysisType += ":vf"
 			}
 			key := cache.AnalysisKey(fp, analysisType, build.Version)
 			_ = cache.PutJSON(key, result)
@@ -138,6 +148,16 @@ func printResults(w io.Writer, result *api.ImpactResult, fmt_ ui.Format) error {
 				rows[i] = []string{ep.File, ep.Name, ep.Type}
 			}
 			ui.Table(w, []string{"FILE", "NAME", "TYPE"}, rows)
+		}
+
+		if len(impact.PrimaryValidationFiles) > 0 {
+			fmt.Fprintln(w)
+			fmt.Fprintln(w, "Suggested tests to run:")
+			rows := make([][]string, len(impact.PrimaryValidationFiles))
+			for i, vf := range impact.PrimaryValidationFiles {
+				rows[i] = []string{vf.File, vf.Confidence}
+			}
+			ui.Table(w, []string{"TEST FILE", "CONFIDENCE"}, rows)
 		}
 
 		fmt.Fprintln(w)

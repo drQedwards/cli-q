@@ -22,9 +22,10 @@ points that would be impacted by changes to the target.
 
 Three usage modes:
 
-  supermodel blast-radius <file>              # analyze a specific file
-  supermodel blast-radius --diff changes.diff # analyze from a git diff
-  supermodel blast-radius                     # global coupling map`,
+  supermodel blast-radius <file>                          # analyze a specific file
+  supermodel blast-radius --diff changes.diff             # analyze from a git diff
+  supermodel blast-radius                                 # global coupling map
+  supermodel blast-radius <file> --validation-files       # include suggested tests to run`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {
@@ -40,6 +41,7 @@ Three usage modes:
 	c.Flags().BoolVar(&opts.Force, "force", false, "re-analyze even if a cached result exists")
 	c.Flags().StringVar(&opts.Diff, "diff", "", "path to a unified diff file (git diff output)")
 	c.Flags().StringVarP(&opts.Output, "output", "o", "", "output format: human|json")
+	c.Flags().BoolVar(&opts.IncludeValidationFiles, "validation-files", false, "show suggested test files to run for each target")
 
 	rootCmd.AddCommand(c)
 }

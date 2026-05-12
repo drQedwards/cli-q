@@ -212,10 +212,15 @@ const impactEndpoint = "/v1/analysis/impact"
 
 // Impact uploads a repository ZIP (and optional diff) and runs impact analysis,
 // polling until the async job completes and returning the result.
-func (c *Client) Impact(ctx context.Context, zipPath, idempotencyKey, targets, diffPath string) (*ImpactResult, error) {
+func (c *Client) Impact(ctx context.Context, zipPath, idempotencyKey, targets, diffPath string, includeValidationFiles bool) (*ImpactResult, error) {
 	endpoint := impactEndpoint
+	sep := "?"
 	if targets != "" {
-		endpoint += "?targets=" + targets
+		endpoint += sep + "targets=" + targets
+		sep = "&"
+	}
+	if includeValidationFiles {
+		endpoint += sep + "includeValidationFiles=true"
 	}
 
 	post := func() (*JobResponse, error) { return c.postImpact(ctx, zipPath, diffPath, idempotencyKey, endpoint) }

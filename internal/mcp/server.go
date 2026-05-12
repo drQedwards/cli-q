@@ -435,7 +435,7 @@ func (s *server) toolBlastRadius(ctx context.Context, args map[string]any) (stri
 	}
 
 	client := api.New(s.cfg)
-	result, err := client.Impact(ctx, zipPath, idempotencyKey, target, "")
+	result, err := client.Impact(ctx, zipPath, idempotencyKey, target, "", false)
 	if err != nil {
 		return "", err
 	}
