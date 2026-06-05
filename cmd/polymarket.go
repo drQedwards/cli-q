@@ -16,7 +16,7 @@ import (
 )
 
 func init() {
-	// Parent: supermodel polymarket
+	// Parent: supermarket polymarket
 	polyCmd := &cobra.Command{
 		Use:   "polymarket",
 		Short: "Polymarket prediction-market tools",
@@ -52,23 +52,39 @@ Output formats:
 	authCmd := &cobra.Command{
 		Use:   "auth",
 		Short: "Configure Polymarket API credentials",
-		Long: `Interactively prompts for Polymarket CLOB API credentials and saves
-them to ~/.supermodel/config.yaml.
+		Long: `Interactively prompts for Polymarket API credentials and saves them to
+~/.supermodel/config.yaml (mode 0600, never committed to git).
 
-Get your credentials at https://polymarket.com → Settings → API Keys.
+Two credential tiers are supported:
 
-You can also skip prompts using flags or env vars:
-  POLYMARKET_API_KEY, POLYMARKET_SECRET, POLYMARKET_PASSPHRASE,
-  POLYMARKET_PRIVATE_KEY, POLYMARKET_PROXY_WALLET`,
+  Builder API (Ed25519) — use --key-id + --secret-key
+    Headers: X-PM-Access-Key, X-PM-Timestamp, X-PM-Signature
+
+  CLOB API (HMAC-SHA256) — use --api-key + --secret [+ --passphrase]
+    Headers: POLY_API_KEY, POLY_SIGNATURE, POLY_TIMESTAMP
+
+Environment variable overrides:
+  POLYMARKET_KEY_ID, POLYMARKET_SECRET_KEY (Builder)
+  POLYMARKET_API_KEY, POLYMARKET_SECRET, POLYMARKET_PASSPHRASE (CLOB)
+  POLYMARKET_PRIVATE_KEY, POLYMARKET_EOA_ADDRESS,
+  POLYMARKET_PROXY_WALLET, POLYMARKET_DEPOSIT_WALLET (wallet)`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runPolymarketAuth(cmd)
 		},
 	}
-	authCmd.Flags().String("api-key", "", "Polymarket API key (UUID)")
-	authCmd.Flags().String("secret", "", "Polymarket API secret")
-	authCmd.Flags().String("passphrase", "", "Polymarket API passphrase")
-	authCmd.Flags().String("private-key", "", "Ethereum private key for L1 signing (optional)")
-	authCmd.Flags().String("proxy-wallet", "", "Proxy wallet address (optional)")
+	// Builder API flags
+	authCmd.Flags().String("key-id", "", "Builder API key ID (UUID)")
+	authCmd.Flags().String("secret-key", "", "Builder API secret key (base64 Ed25519 private key)")
+	// CLOB API flags
+	authCmd.Flags().String("api-key", "", "CLOB API key (UUID)")
+	authCmd.Flags().String("secret", "", "CLOB API secret (base64 HMAC key)")
+	authCmd.Flags().String("passphrase", "", "CLOB API passphrase")
+	// Wallet flags
+	authCmd.Flags().String("private-key", "", "Ethereum private key (64 hex chars, for L1 signing)")
+	authCmd.Flags().String("eoa-address", "", "EOA wallet address (0x…, derived from private key)")
+	authCmd.Flags().String("proxy-wallet", "", "Proxy/Safe wallet address (0x…)")
+	authCmd.Flags().String("deposit-wallet", "", "Deposit wallet address (0x…, USDC deposits)")
+	authCmd.Flags().Int64("chain-id", 0, "Polygon chain ID (137=mainnet, 80002=Amoy testnet)")
 
 	polyCmd.AddCommand(graphCmd)
 	polyCmd.AddCommand(authCmd)
@@ -83,53 +99,56 @@ func runPolymarketAuth(cmd *cobra.Command) error {
 	}
 	poly := cfg.EnsurePolymarket()
 
-	fmt.Fprintln(os.Stderr, "Configure Polymarket CLOB API credentials.")
-	fmt.Fprintln(os.Stderr, "Get your keys at https://polymarket.com → Settings → API Keys.")
+	fmt.Fprintln(os.Stderr, "Configure Polymarket API credentials.")
+	fmt.Fprintln(os.Stderr, "Press Enter to skip any field (existing values are preserved).")
 	fmt.Fprintln(os.Stderr)
 
-	if v, _ := cmd.Flags().GetString("api-key"); v != "" {
-		poly.APIKey = v
-	} else if val, e := polyPromptSecret("API Key (UUID): "); e != nil {
-		return e
-	} else {
-		poly.APIKey = val
+	fmt.Fprintln(os.Stderr, "── Builder API (Ed25519) ──────────────")
+	if err := polySetFlag(cmd, "key-id", "Builder Key ID (UUID): ", &poly.KeyID, false); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "secret-key", "Builder Secret Key (base64 Ed25519): ", &poly.SecretKey, true); err != nil {
+		return err
 	}
 
-	if v, _ := cmd.Flags().GetString("secret"); v != "" {
-		poly.Secret = v
-	} else if val, e := polyPromptSecret("API Secret: "); e != nil {
-		return e
-	} else {
-		poly.Secret = val
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "── CLOB API (HMAC-SHA256) ─────────────")
+	if err := polySetFlag(cmd, "api-key", "CLOB API Key (UUID): ", &poly.APIKey, false); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "secret", "CLOB API Secret: ", &poly.Secret, true); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "passphrase", "CLOB API Passphrase: ", &poly.Passphrase, true); err != nil {
+		return err
 	}
 
-	if v, _ := cmd.Flags().GetString("passphrase"); v != "" {
-		poly.Passphrase = v
-	} else if val, e := polyPromptSecret("API Passphrase: "); e != nil {
-		return e
-	} else {
-		poly.Passphrase = val
+	fmt.Fprintln(os.Stderr)
+	fmt.Fprintln(os.Stderr, "── Wallet ───────────────────────────")
+	if err := polySetFlag(cmd, "private-key", "Private Key (64 hex chars): ", &poly.PrivateKey, true); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "eoa-address", "EOA Address (0x…): ", &poly.EOAAddress, false); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "proxy-wallet", "Proxy/Safe Wallet (0x…): ", &poly.ProxyWallet, false); err != nil {
+		return err
+	}
+	if err := polySetFlag(cmd, "deposit-wallet", "Deposit Wallet (0x…): ", &poly.DepositWallet, false); err != nil {
+		return err
 	}
 
-	if v, _ := cmd.Flags().GetString("private-key"); v != "" {
-		poly.PrivateKey = v
-	} else {
-		fmt.Fprint(os.Stderr, "Private Key (optional, press Enter to skip): ")
-		if val, e := polyReadLine(); e != nil {
+	if chainID, _ := cmd.Flags().GetInt64("chain-id"); chainID != 0 {
+		poly.ChainID = chainID
+	} else if poly.ChainID == 0 {
+		fmt.Fprint(os.Stderr, "Chain ID (137=mainnet, 80002=testnet, Enter to skip): ")
+		if line, e := polyReadLine(); e != nil {
 			return e
-		} else {
-			poly.PrivateKey = val
-		}
-	}
-
-	if v, _ := cmd.Flags().GetString("proxy-wallet"); v != "" {
-		poly.ProxyWallet = v
-	} else {
-		fmt.Fprint(os.Stderr, "Proxy Wallet Address (optional, press Enter to skip): ")
-		if val, e := polyReadLine(); e != nil {
-			return e
-		} else {
-			poly.ProxyWallet = val
+		} else if line != "" {
+			var id int64
+			if _, err := fmt.Sscanf(line, "%d", &id); err == nil {
+				poly.ChainID = id
+			}
 		}
 	}
 
@@ -137,6 +156,30 @@ func runPolymarketAuth(cmd *cobra.Command) error {
 		return err
 	}
 	ui.Success("Polymarket credentials saved to %s", config.Path())
+	return nil
+}
+
+// polySetFlag writes the flag value (if set) or prompts interactively.
+// Existing values in *dest are preserved when the user presses Enter.
+func polySetFlag(cmd *cobra.Command, flag, label string, dest *string, secret bool) error {
+	if v, _ := cmd.Flags().GetString(flag); v != "" {
+		*dest = v
+		return nil
+	}
+	var val string
+	var err error
+	if secret {
+		val, err = polyPromptSecret(label)
+	} else {
+		fmt.Fprint(os.Stderr, label)
+		val, err = polyReadLine()
+	}
+	if err != nil {
+		return err
+	}
+	if val != "" {
+		*dest = val
+	}
 	return nil
 }
 

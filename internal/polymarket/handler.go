@@ -109,7 +109,7 @@ func writeDOT(w io.Writer, markets []Market) error {
 		marketLabel := truncate(m.Question, 40)
 		fmt.Fprintf(w, "  %q [label=%q tooltip=%q]\n", m.ConditionID, marketLabel, m.Category)
 		for _, t := range m.Tokens {
-			tokenLabel := fmt.Sprintf("%s @ %s", t.Outcome, t.Price)
+			tokenLabel := fmt.Sprintf("%s @ %.4f", t.Outcome, t.Price)
 			fmt.Fprintf(w, "  %q [label=%q shape=ellipse]\n", t.TokenID, tokenLabel)
 			fmt.Fprintf(w, "  %q -> %q [label=%q]\n", m.ConditionID, t.TokenID, t.Outcome)
 		}
@@ -123,9 +123,9 @@ func tokenPrices(tokens []Token) (yes, no string) {
 	for _, t := range tokens {
 		switch strings.ToUpper(t.Outcome) {
 		case "YES":
-			yes = t.Price
+			yes = strconv.FormatFloat(t.Price, 'f', 4, 64)
 		case "NO":
-			no = t.Price
+			no = strconv.FormatFloat(t.Price, 'f', 4, 64)
 		}
 	}
 	if yes == "" {

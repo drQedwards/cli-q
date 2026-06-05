@@ -21,10 +21,10 @@ type Market struct {
 
 // Token represents one outcome token within a market (e.g. YES or NO).
 type Token struct {
-	TokenID string `json:"token_id"`
-	Outcome string `json:"outcome"`
-	Price   string `json:"price"`
-	Winner  bool   `json:"winner"`
+	TokenID string  `json:"token_id"`
+	Outcome string  `json:"outcome"`
+	Price   float64 `json:"price"`
+	Winner  bool    `json:"winner"`
 }
 
 // MarketList is the paginated response from GET /markets.

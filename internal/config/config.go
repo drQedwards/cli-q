@@ -16,22 +16,37 @@ const PolymarketCLOBBase = "https://clob.polymarket.com"
 
 const defaultOutput = "human"
 
-// PolymarketConfig holds Polymarket CLOB API credentials persisted under the
+// PolymarketConfig holds Polymarket API credentials persisted under the
 // polymarket: key in ~/.supermodel/config.yaml.
 //
-// Environment variable overrides:
+// Two auth tiers are supported:
 //
-//	  POLYMARKET_API_KEY      → api_key
-//	  POLYMARKET_SECRET       → secret
-//	  POLYMARKET_PASSPHRASE   → passphrase
-//	  POLYMARKET_PRIVATE_KEY  → private_key
-//	  POLYMARKET_PROXY_WALLET → proxy_wallet
+//  1. CLOB API (HMAC-SHA256) — standard trading credentials
+//     env: POLYMARKET_API_KEY, POLYMARKET_SECRET, POLYMARKET_PASSPHRASE
+//
+//  2. Builder API (Ed25519) — programmatic market-creation credentials
+//     env: POLYMARKET_KEY_ID, POLYMARKET_SECRET_KEY
+//
+// Wallet env overrides: POLYMARKET_PRIVATE_KEY, POLYMARKET_EOA_ADDRESS,
+// POLYMARKET_PROXY_WALLET, POLYMARKET_DEPOSIT_WALLET
 type PolymarketConfig struct {
-	APIKey      string `yaml:"api_key,omitempty"`
-	Secret      string `yaml:"secret,omitempty"`
-	Passphrase  string `yaml:"passphrase,omitempty"`
-	PrivateKey  string `yaml:"private_key,omitempty"`
-	ProxyWallet string `yaml:"proxy_wallet,omitempty"`
+	// CLOB API credentials (HMAC-SHA256)
+	APIKey     string `yaml:"api_key,omitempty"`
+	Secret     string `yaml:"secret,omitempty"`
+	Passphrase string `yaml:"passphrase,omitempty"`
+
+	// Builder API credentials (Ed25519 — X-PM-* headers)
+	KeyID     string `yaml:"key_id,omitempty"`
+	SecretKey string `yaml:"secret_key,omitempty"` // base64-encoded Ed25519 private key (64 bytes)
+
+	// Ethereum wallet
+	PrivateKey    string `yaml:"private_key,omitempty"`    // 64-hex Ethereum private key
+	EOAAddress    string `yaml:"eoa_address,omitempty"`    // checksummed EOA derived from private key
+	ProxyWallet   string `yaml:"proxy_wallet,omitempty"`   // Gnosis Safe / proxy wallet
+	DepositWallet string `yaml:"deposit_wallet,omitempty"` // UUPS deposit wallet for USDC
+
+	// Network
+	ChainID int64 `yaml:"chain_id,omitempty"` // 137 = Polygon mainnet, 80002 = Amoy testnet
 }
 
 // Config holds user-level settings persisted at ~/.supermodel/config.yaml.
@@ -126,11 +141,14 @@ func (c *Config) EnsurePolymarket() *PolymarketConfig {
 	return c.Polymarket
 }
 
-// RequirePolymarketKey returns an actionable error when no Polymarket API key
-// is configured.
+// RequirePolymarketKey returns an actionable error when no Polymarket credentials
+// are configured.
 func (c *Config) RequirePolymarketKey() error {
-	if c.Polymarket == nil || c.Polymarket.APIKey == "" {
-		return fmt.Errorf("Polymarket credentials not set — run `supermodel polymarket auth` or set POLYMARKET_API_KEY")
+	if c.Polymarket == nil {
+		return fmt.Errorf("Polymarket credentials not set — run `supermodel polymarket auth`")
+	}
+	if c.Polymarket.APIKey == "" && c.Polymarket.KeyID == "" {
+		return fmt.Errorf("Polymarket credentials not set — run `supermodel polymarket auth` or set POLYMARKET_API_KEY / POLYMARKET_KEY_ID")
 	}
 	return nil
 }
@@ -158,7 +176,7 @@ func (c *Config) applyEnv() {
 	if os.Getenv("SUPERMODEL_SHARDS") == "false" {
 		c.Shards = boolPtr(false)
 	}
-	// Polymarket env var overrides
+	// CLOB API env overrides
 	if key := os.Getenv("POLYMARKET_API_KEY"); key != "" {
 		c.EnsurePolymarket().APIKey = key
 	}
@@ -168,11 +186,25 @@ func (c *Config) applyEnv() {
 	if pass := os.Getenv("POLYMARKET_PASSPHRASE"); pass != "" {
 		c.EnsurePolymarket().Passphrase = pass
 	}
+	// Builder API env overrides
+	if kid := os.Getenv("POLYMARKET_KEY_ID"); kid != "" {
+		c.EnsurePolymarket().KeyID = kid
+	}
+	if sk := os.Getenv("POLYMARKET_SECRET_KEY"); sk != "" {
+		c.EnsurePolymarket().SecretKey = sk
+	}
+	// Wallet env overrides
 	if pk := os.Getenv("POLYMARKET_PRIVATE_KEY"); pk != "" {
 		c.EnsurePolymarket().PrivateKey = pk
 	}
+	if eoa := os.Getenv("POLYMARKET_EOA_ADDRESS"); eoa != "" {
+		c.EnsurePolymarket().EOAAddress = eoa
+	}
 	if wallet := os.Getenv("POLYMARKET_PROXY_WALLET"); wallet != "" {
 		c.EnsurePolymarket().ProxyWallet = wallet
+	}
+	if deposit := os.Getenv("POLYMARKET_DEPOSIT_WALLET"); deposit != "" {
+		c.EnsurePolymarket().DepositWallet = deposit
 	}
 }
 
