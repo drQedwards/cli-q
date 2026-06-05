@@ -11,14 +11,36 @@ import (
 // DefaultAPIBase is the production Supermodel API endpoint.
 const DefaultAPIBase = "https://api.supermodeltools.com"
 
+// PolymarketCLOBBase is the Polymarket CLOB API endpoint.
+const PolymarketCLOBBase = "https://clob.polymarket.com"
+
 const defaultOutput = "human"
+
+// PolymarketConfig holds Polymarket CLOB API credentials persisted under the
+// polymarket: key in ~/.supermodel/config.yaml.
+//
+// Environment variable overrides:
+//
+//	  POLYMARKET_API_KEY      → api_key
+//	  POLYMARKET_SECRET       → secret
+//	  POLYMARKET_PASSPHRASE   → passphrase
+//	  POLYMARKET_PRIVATE_KEY  → private_key
+//	  POLYMARKET_PROXY_WALLET → proxy_wallet
+type PolymarketConfig struct {
+	APIKey      string `yaml:"api_key,omitempty"`
+	Secret      string `yaml:"secret,omitempty"`
+	Passphrase  string `yaml:"passphrase,omitempty"`
+	PrivateKey  string `yaml:"private_key,omitempty"`
+	ProxyWallet string `yaml:"proxy_wallet,omitempty"`
+}
 
 // Config holds user-level settings persisted at ~/.supermodel/config.yaml.
 type Config struct {
-	APIKey  string `yaml:"api_key,omitempty"`
-	APIBase string `yaml:"api_base,omitempty"`
-	Output  string `yaml:"output,omitempty"` // "human" | "json"
-	Shards  *bool  `yaml:"shards,omitempty"`
+	APIKey     string            `yaml:"api_key,omitempty"`
+	APIBase    string            `yaml:"api_base,omitempty"`
+	Output     string            `yaml:"output,omitempty"` // "human" | "json"
+	Shards     *bool             `yaml:"shards,omitempty"`
+	Polymarket *PolymarketConfig `yaml:"polymarket,omitempty"`
 }
 
 // Dir returns the Supermodel config directory (~/.supermodel).
@@ -95,6 +117,24 @@ func (c *Config) RequireAPIKey() error {
 	return nil
 }
 
+// EnsurePolymarket returns the Polymarket config sub-section, initializing
+// it if it was nil (not yet present in the config file).
+func (c *Config) EnsurePolymarket() *PolymarketConfig {
+	if c.Polymarket == nil {
+		c.Polymarket = &PolymarketConfig{}
+	}
+	return c.Polymarket
+}
+
+// RequirePolymarketKey returns an actionable error when no Polymarket API key
+// is configured.
+func (c *Config) RequirePolymarketKey() error {
+	if c.Polymarket == nil || c.Polymarket.APIKey == "" {
+		return fmt.Errorf("Polymarket credentials not set — run `supermodel polymarket auth` or set POLYMARKET_API_KEY")
+	}
+	return nil
+}
+
 func defaults() *Config {
 	return &Config{APIBase: DefaultAPIBase, Output: defaultOutput}
 }
@@ -117,6 +157,22 @@ func (c *Config) applyEnv() {
 	}
 	if os.Getenv("SUPERMODEL_SHARDS") == "false" {
 		c.Shards = boolPtr(false)
+	}
+	// Polymarket env var overrides
+	if key := os.Getenv("POLYMARKET_API_KEY"); key != "" {
+		c.EnsurePolymarket().APIKey = key
+	}
+	if secret := os.Getenv("POLYMARKET_SECRET"); secret != "" {
+		c.EnsurePolymarket().Secret = secret
+	}
+	if pass := os.Getenv("POLYMARKET_PASSPHRASE"); pass != "" {
+		c.EnsurePolymarket().Passphrase = pass
+	}
+	if pk := os.Getenv("POLYMARKET_PRIVATE_KEY"); pk != "" {
+		c.EnsurePolymarket().PrivateKey = pk
+	}
+	if wallet := os.Getenv("POLYMARKET_PROXY_WALLET"); wallet != "" {
+		c.EnsurePolymarket().ProxyWallet = wallet
 	}
 }
 

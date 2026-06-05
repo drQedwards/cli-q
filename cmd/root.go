@@ -116,6 +116,8 @@ var noConfigCommands = map[string]bool{
 	"status":  true, // reads config; works even when not authenticated
 	"hook":    true, // forwards events to daemon; no API needed
 	"restore": true, // has --local fallback; API key is optional
+	// Polymarket commands use their own credentials, not the Supermodel API key:
+	"polymarket": true,
 }
 
 var rootCmd = &cobra.Command{
