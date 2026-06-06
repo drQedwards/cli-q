@@ -2,18 +2,60 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
+	"net/http"
 	"os"
+	"os/signal"
+	"sort"
+	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 
 	"github.com/supermodeltools/cli/internal/config"
+	"github.com/supermodeltools/cli/internal/farcaster"
 	"github.com/supermodeltools/cli/internal/polymarket"
 	"github.com/supermodeltools/cli/internal/ui"
 )
+
+// castSummary formats a brief cast text for a single market (≤320 chars).
+func castSummary(m *polymarket.Market) string {
+	yesPrice, noPrice := castTokenPrices(m.Tokens)
+	id := m.ConditionID
+	if len(id) > 10 {
+		id = id[:10]
+	}
+	q := m.Question
+	// keep question short enough to fit with prices under 320 chars
+	maxQ := 240
+	if len([]rune(q)) > maxQ {
+		q = string([]rune(q)[:maxQ-1]) + "…"
+	}
+	return fmt.Sprintf("%s\nYES: %s | NO: %s\nID: %s", q, yesPrice, noPrice, id)
+}
+
+// castTokenPrices returns formatted YES/NO prices for a market.
+func castTokenPrices(tokens []polymarket.Token) (yes, no string) {
+	for _, t := range tokens {
+		switch strings.ToUpper(t.Outcome) {
+		case "YES":
+			yes = strconv.FormatFloat(t.Price, 'f', 4, 64)
+		case "NO":
+			no = strconv.FormatFloat(t.Price, 'f', 4, 64)
+		}
+	}
+	if yes == "" {
+		yes = "-"
+	}
+	if no == "" {
+		no = "-"
+	}
+	return
+}
 
 func init() {
 	// Parent: supermarket polymarket
@@ -86,8 +128,74 @@ Environment variable overrides:
 	authCmd.Flags().String("deposit-wallet", "", "Deposit wallet address (0x…, USDC deposits)")
 	authCmd.Flags().Int64("chain-id", 0, "Polygon chain ID (137=mainnet, 80002=Amoy testnet)")
 
+	// supermodel polymarket cast
+	var castMarket, castChannel string
+	var castLimit int
+	castCmd := &cobra.Command{
+		Use:   "cast",
+		Short: "Cast Polymarket odds to Farcaster",
+		Long: `Fetches Polymarket market data and casts a summary to Farcaster via Neynar.
+
+If --market is given, casts a single market's odds.
+Otherwise, fetches the top --limit markets by volume and casts a summary.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runPolymarketCast(cmd.Context(), castMarket, castChannel, castLimit)
+		},
+	}
+	castCmd.Flags().StringVar(&castMarket, "market", "", "condition_id of a single market to cast")
+	castCmd.Flags().StringVar(&castChannel, "channel", "", "Farcaster channel slug (overrides config default)")
+	castCmd.Flags().IntVar(&castLimit, "limit", 5, "number of top markets to cast when --market is not set")
+
+	// supermodel polymarket watch
+	var watchMarket, watchChannel string
+	var watchThreshold float64
+	var watchInterval int
+	watchCmd := &cobra.Command{
+		Use:   "watch",
+		Short: "Watch a Polymarket market and cast on significant price moves",
+		Long: `Polls a Polymarket market every --interval seconds. When the YES price
+moves by at least --threshold percent, casts an alert to Farcaster.
+
+Press Ctrl-C to stop.`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if watchMarket == "" {
+				return fmt.Errorf("--market is required")
+			}
+			return runPolymarketWatch(cmd.Context(), watchMarket, watchChannel, watchThreshold, watchInterval)
+		},
+	}
+	watchCmd.Flags().StringVar(&watchMarket, "market", "", "condition_id of market to watch (required)")
+	watchCmd.Flags().StringVar(&watchChannel, "channel", "", "Farcaster channel slug (overrides config default)")
+	watchCmd.Flags().Float64Var(&watchThreshold, "threshold", 3.0, "price-move threshold in percent before casting an alert")
+	watchCmd.Flags().IntVar(&watchInterval, "interval", 30, "poll interval in seconds")
+
+	// supermodel polymarket serve
+	var servePort int
+	var serveMarket string
+	serveCmd := &cobra.Command{
+		Use:   "serve",
+		Short: "Serve a Farcaster Frame for a Polymarket market",
+		Long: `Starts an HTTP server that serves a Farcaster Frame showing live
+Polymarket data. The frame supports a "Refresh" button that re-fetches
+market data on each button press.
+
+GET / — serves the frame HTML
+POST / — handles frame button presses and returns an updated frame`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if serveMarket == "" {
+				return fmt.Errorf("--market is required")
+			}
+			return runPolymarketServe(cmd.Context(), serveMarket, servePort)
+		},
+	}
+	serveCmd.Flags().IntVar(&servePort, "port", 8080, "HTTP port to listen on")
+	serveCmd.Flags().StringVar(&serveMarket, "market", "", "condition_id of market to serve (required)")
+
 	polyCmd.AddCommand(graphCmd)
 	polyCmd.AddCommand(authCmd)
+	polyCmd.AddCommand(castCmd)
+	polyCmd.AddCommand(watchCmd)
+	polyCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(polyCmd)
 }
 
@@ -208,4 +316,220 @@ func polyReadLine() (string, error) {
 		return "", err
 	}
 	return "", nil
+}
+
+// runPolymarketCast fetches market data and casts to Farcaster.
+func runPolymarketCast(ctx context.Context, market, channel string, limit int) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	if err := cfg.RequireFarcasterSigner(); err != nil {
+		return err
+	}
+	fc := cfg.EnsureFarcaster()
+	if channel == "" {
+		channel = fc.Channel
+	}
+
+	client := polymarket.New(cfg)
+	fcClient := farcaster.New(fc.NeynarAPIKey)
+
+	var markets []polymarket.Market
+	if market != "" {
+		m, err := client.GetMarket(ctx, market)
+		if err != nil {
+			return fmt.Errorf("fetch market %s: %w", market, err)
+		}
+		markets = []polymarket.Market{*m}
+	} else {
+		s := ui.Start("Fetching Polymarket markets…")
+		fetched, _, err := client.ListMarkets(ctx, limit, "")
+		s.Stop()
+		if err != nil {
+			return fmt.Errorf("list markets: %w", err)
+		}
+		markets = fetched
+		sort.Slice(markets, func(i, j int) bool {
+			vi, _ := strconv.ParseFloat(markets[i].Volume, 64)
+			vj, _ := strconv.ParseFloat(markets[j].Volume, 64)
+			return vi > vj
+		})
+		if len(markets) > limit {
+			markets = markets[:limit]
+		}
+	}
+
+	for _, m := range markets {
+		text := castSummary(&m)
+		req := farcaster.CastRequest{
+			SignerUUID: fc.SignerUUID,
+			Text:       text,
+		}
+		if channel != "" {
+			req.ChannelID = channel
+		}
+		resp, err := fcClient.Cast(req)
+		if err != nil {
+			return fmt.Errorf("cast market %s: %w", m.ConditionID, err)
+		}
+		ui.Success("Cast posted: %s", resp.Cast.Hash)
+	}
+	return nil
+}
+
+// runPolymarketWatch polls a market and casts an alert when the price moves.
+func runPolymarketWatch(ctx context.Context, market, channel string, threshold float64, intervalSecs int) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	if err := cfg.RequireFarcasterSigner(); err != nil {
+		return err
+	}
+	fc := cfg.EnsureFarcaster()
+	if channel == "" {
+		channel = fc.Channel
+	}
+
+	// Use signal.NotifyContext for clean Ctrl-C handling
+	ctx, stop := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	polyClient := polymarket.New(cfg)
+	fcClient := farcaster.New(fc.NeynarAPIKey)
+
+	var lastYes float64
+	initialized := false
+
+	ticker := time.NewTicker(time.Duration(intervalSecs) * time.Second)
+	defer ticker.Stop()
+
+	fmt.Fprintf(os.Stderr, "Watching market %s (threshold: %.1f%%, interval: %ds)\n", market, threshold, intervalSecs)
+	fmt.Fprintf(os.Stderr, "Press Ctrl-C to stop.\n")
+
+	for {
+		select {
+		case <-ctx.Done():
+			fmt.Fprintln(os.Stderr, "\nStopped.")
+			return nil
+		case <-ticker.C:
+			m, err := polyClient.GetMarket(ctx, market)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "poll error: %v\n", err)
+				continue
+			}
+			yesStr, _ := castTokenPrices(m.Tokens)
+			yesPrice, err := strconv.ParseFloat(yesStr, 64)
+			if err != nil {
+				continue
+			}
+
+			fmt.Fprintf(os.Stderr, "[%s] YES: %s\n", time.Now().Format("15:04:05"), yesStr)
+
+			if !initialized {
+				lastYes = yesPrice
+				initialized = true
+				continue
+			}
+
+			// Calculate percent change
+			if lastYes != 0 {
+				pct := ((yesPrice - lastYes) / lastYes) * 100
+				if pct < 0 {
+					pct = -pct
+				}
+				if pct >= threshold {
+					direction := "↑"
+					if yesPrice < lastYes {
+						direction = "↓"
+					}
+					text := fmt.Sprintf("🚨 Polymarket Alert %s\n%s\nYES: %s → %s (%.1f%%)\nID: %s",
+						direction,
+						truncateCast(m.Question, 180),
+						strconv.FormatFloat(lastYes, 'f', 4, 64),
+						yesStr,
+						((yesPrice-lastYes)/lastYes)*100,
+						shortCastID(m.ConditionID),
+					)
+					req := farcaster.CastRequest{
+						SignerUUID: fc.SignerUUID,
+						Text:       text,
+					}
+					if channel != "" {
+						req.ChannelID = channel
+					}
+					resp, err := fcClient.Cast(req)
+					if err != nil {
+						fmt.Fprintf(os.Stderr, "cast error: %v\n", err)
+					} else {
+						fmt.Fprintf(os.Stderr, "Alert cast: %s\n", resp.Cast.Hash)
+					}
+					lastYes = yesPrice
+				}
+			}
+		}
+	}
+}
+
+// runPolymarketServe starts an HTTP server that serves a Farcaster Frame.
+func runPolymarketServe(ctx context.Context, market string, port int) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+	polyClient := polymarket.New(cfg)
+
+	addr := fmt.Sprintf(":%d", port)
+	fmt.Fprintf(os.Stderr, "Serving Farcaster Frame at http://localhost%s\n", addr)
+	fmt.Fprintf(os.Stderr, "Market: %s\n", market)
+	fmt.Fprintf(os.Stderr, "Press Ctrl-C to stop.\n")
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		m, err := polyClient.GetMarket(r.Context(), market)
+		if err != nil {
+			http.Error(w, "failed to fetch market: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		scheme := "http"
+		if r.TLS != nil {
+			scheme = "https"
+		}
+		postURL := fmt.Sprintf("%s://%s/", scheme, r.Host)
+		html := farcaster.BuildFrame(m, postURL)
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprint(w, html)
+	})
+
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	// Shutdown on context cancel
+	go func() {
+		<-ctx.Done()
+		_ = srv.Shutdown(context.Background())
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return fmt.Errorf("server error: %w", err)
+	}
+	return nil
+}
+
+func truncateCast(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	return string(runes[:n-1]) + "…"
+}
+
+func shortCastID(id string) string {
+	if len(id) > 10 {
+		return id[:10]
+	}
+	return id
 }

@@ -118,6 +118,8 @@ var noConfigCommands = map[string]bool{
 	"restore": true, // has --local fallback; API key is optional
 	// Polymarket commands use their own credentials, not the Supermodel API key:
 	"polymarket": true,
+	// Farcaster commands use Neynar credentials, not the Supermodel API key:
+	"farcaster": true,
 }
 
 var rootCmd = &cobra.Command{
