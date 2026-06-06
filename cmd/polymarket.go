@@ -83,6 +83,18 @@ func runPolymarketAuth(cmd *cobra.Command) error {
 	}
 	poly := cfg.EnsurePolymarket()
 
+	// Warn when secrets are supplied as flags — they appear in process listings
+	// (ps, /proc) which are readable by other users on the same machine.
+	sensitiveFlags := []string{"api-key", "secret", "passphrase", "private-key"}
+	for _, f := range sensitiveFlags {
+		if v, _ := cmd.Flags().GetString(f); v != "" {
+			fmt.Fprintf(os.Stderr, "Warning: --%s value is visible in process listings (ps, /proc).\n", f)
+			fmt.Fprintln(os.Stderr, "         Prefer interactive prompts or environment variables instead.")
+			fmt.Fprintln(os.Stderr)
+			break
+		}
+	}
+
 	fmt.Fprintln(os.Stderr, "Configure Polymarket CLOB API credentials.")
 	fmt.Fprintln(os.Stderr, "Get your keys at https://polymarket.com → Settings → API Keys.")
 	fmt.Fprintln(os.Stderr)
@@ -115,7 +127,7 @@ func runPolymarketAuth(cmd *cobra.Command) error {
 		poly.PrivateKey = v
 	} else {
 		fmt.Fprint(os.Stderr, "Private Key (optional, press Enter to skip): ")
-		if val, e := polyReadLine(); e != nil {
+		if val, e := polyPromptSecret(""); e != nil {
 			return e
 		} else {
 			poly.PrivateKey = val
