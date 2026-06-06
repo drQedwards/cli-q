@@ -41,11 +41,30 @@ var sensitivePatterns = []string{
 	"*.cer",
 	"*.crt",
 	"*.ppk",
+	"*.jks",
+	"*.keystore",
 	// SSH private keys
 	"id_rsa",
 	"id_dsa",
 	"id_ecdsa",
 	"id_ed25519",
+	// PGP / GPG keys
+	"*.asc",
+	"*.gpg",
+	// Cloud provider credentials
+	"credentials",        // AWS shared credentials file
+	"*credentials*.json", // GCP service account JSON (e.g. my-service-account-credentials.json)
+	"*service-account*.json",
+	"google-credentials.json",
+	"gcloud-credentials.json",
+	"application_default_credentials.json",
+	// Kubernetes
+	"kubeconfig",
+	"*.kubeconfig",
+	// VPN configurations
+	"*.ovpn",
+	// Network access
+	".netrc",
 	// Package manager auth
 	".npmrc",
 	".pypirc",
@@ -55,6 +74,10 @@ var sensitivePatterns = []string{
 	// Web server
 	".htpasswd",
 }
+
+// maxZipBytes is the hard cap on total uncompressed bytes written to any ZIP.
+// This prevents unexpectedly large archives from exhausting disk or upload quotas.
+const maxZipBytes = 2 << 30 // 2 GB
 
 // isSensitiveFile reports whether the file at relPath should always be excluded.
 func isSensitiveFile(relPath string) bool {
@@ -212,7 +235,8 @@ func gitLsFilesZip(dir, dest string) error {
 	}
 	defer f.Close()
 
-	zw := zip.NewWriter(f)
+	cw := &countingWriter{w: f, limit: maxZipBytes}
+	zw := zip.NewWriter(cw)
 	defer zw.Close()
 
 	scanner := bufio.NewScanner(bytes.NewReader(out))
@@ -246,7 +270,8 @@ func walkZip(dir, dest string) error {
 	}
 	defer out.Close()
 
-	zw := zip.NewWriter(out)
+	cw := &countingWriter{w: out, limit: maxZipBytes}
+	zw := zip.NewWriter(cw)
 	defer zw.Close()
 
 	return filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -285,4 +310,20 @@ func copyFile(path string, w io.Writer) error {
 	_, err = io.Copy(w, f)
 	f.Close()
 	return err
+}
+
+// countingWriter wraps an io.Writer and tracks bytes written, returning an
+// error when the total exceeds the configured limit.
+type countingWriter struct {
+	w     io.Writer
+	n     int64
+	limit int64
+}
+
+func (cw *countingWriter) Write(p []byte) (int, error) {
+	cw.n += int64(len(p))
+	if cw.n > cw.limit {
+		return 0, fmt.Errorf("archive exceeds %d byte limit", cw.limit)
+	}
+	return cw.w.Write(p)
 }
